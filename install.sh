@@ -27,10 +27,11 @@ backup() {
 }
 
 case "$MODE" in
-  vertical)   IMG="$HERE/splash/vertical.png";    ROT=3 ;;  # 90° CCW, como pacman
-  horizontal) IMG="$HERE/splash/horizontal.png"; ROT=0 ;;
+  vertical)   IMG="$HERE/splash/vertical.png";    ES_IMG="$HERE/splash/vertical-es.png"; ROT=3 ;;  # 90° CCW, como pacman
+  horizontal) IMG="$HERE/splash/horizontal.png"; ES_IMG="$HERE/splash/horizontal.png"; ROT=0 ;;
 esac
 [ -f "$IMG" ] || fail "no encontré $IMG (copiá la carpeta splash junto a install.sh)"
+[ -f "$ES_IMG" ] || fail "no encontré $ES_IMG (falta la imagen de la barra de carga)"
 command -v python3 >/dev/null 2>&1 || fail "falta python3 en el sistema"
 
 log "instalando splash $MODE"
@@ -74,14 +75,30 @@ chmod 644 /userdata/splash/krum.png
 
 # Imagen de la barra de carga de EmulationStation (se reaplica en cada arranque).
 backup /boot/splash-es.png
-cp "$IMG" /boot/splash-es.png
+cp "$ES_IMG" /boot/splash-es.png
 chmod 644 /boot/splash-es.png
 
-# Opciones de splash en userdata y en la configuración de arranque.
+# Los cambios de configuración se hacen con ES detenido: si no, al iniciarlo
+# pide correcciones y puede sobrescribir es_settings.cfg al salir.
+if [ -x /etc/init.d/S31emulationstation ]; then
+  /etc/init.d/S31emulationstation stop >/dev/null 2>&1 || true
+fi
+
+# Opciones de splash y música de fondo en userdata y en la configuración de arranque.
 batocera-settings-set \
   splash.screen.enabled 1 \
   splash.screen.sound 0 \
-  splash.screen.length 5
+  splash.screen.length 5 \
+  audio.bgmusic 0
+
+ES_SETTINGS=/userdata/system/configs/emulationstation/es_settings.cfg
+if [ -f "$ES_SETTINGS" ]; then
+  if grep -q '<bool name="audio.bgmusic"' "$ES_SETTINGS"; then
+    sed -i 's|<bool name="audio.bgmusic" value="[^"]*" />|<bool name="audio.bgmusic" value="false" />|' "$ES_SETTINGS"
+  else
+    sed -i '/<\/config>/i\	<bool name="audio.bgmusic" value="false" />' "$ES_SETTINGS"
+  fi
+fi
 sed -i '/^splash\.video\.rotation=/d' /userdata/system/batocera.conf
 
 if grep -q '^splash\.screen\.enabled=' /boot/batocera-boot.conf; then
@@ -91,10 +108,6 @@ else
 fi
 
 # Rotación: 0 para horizontal, 3 (90° CCW) para vertical, como pacman.
-# Se cambia con ES detenido; si no, Batocera pide correcciones al iniciarlo.
-if [ -x /etc/init.d/S31emulationstation ]; then
-  /etc/init.d/S31emulationstation stop >/dev/null 2>&1 || true
-fi
 batocera-settings-set display.rotate "$ROT"
 
 # Logo temprano desactivado también para este arranque.

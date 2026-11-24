@@ -33,10 +33,12 @@ del logo de Batocera, y sigue saliendo después de actualizar Batocera.
 
 ### Qué hace
 
-- Copia la imagen elegida a `/userdata/splash/krum.png` (splash de arranque) y a
-  `/boot/splash-es.png` (imagen de la pantalla de carga).
+- Copia la imagen elegida a `/userdata/splash/krum.png` (splash de arranque).
+- Copia a `/boot/splash-es.png` la imagen de la barra de carga: la horizontal tal
+  cual, y para la vertical una copia girada 90° (`vertical-es.png`), porque ES la
+  muestra rotada cuando la pantalla está en 90° CCW.
 - Instala `/boot/boot-custom.sh`, que en cada arranque desactiva el logo temprano
-  de Batocera y pone nuestra imagen como fondo de la barra de progreso de
+  de Batocera y pone esa imagen como fondo de la barra de progreso de
   EmulationStation (`:/logo.png`), para que la barra aparezca sobre ella.
 - Quita el permiso de ejecución a `S03system-splash` y borra su marca de
   "ya mostré el logo".
@@ -47,6 +49,8 @@ del logo de Batocera, y sigue saliendo después de actualizar Batocera.
 - Fija la rotación: `display.rotate=0` con `-h` y `display.rotate=3` (90° CCW,
   como pacman) con `-v`. Detiene EmulationStation antes de cambiarla para que
   Batocera no pida correcciones al iniciarlo.
+- Apaga la música de fondo de la interfaz de ES (`audio.bgmusic=0` y el ajuste
+  `audio.bgmusic` de `es_settings.cfg` en `false`).
 - Guarda un backup con fecha de cada archivo que modifica, al lado del original.
 
 No cambia otros ajustes del mueble.
