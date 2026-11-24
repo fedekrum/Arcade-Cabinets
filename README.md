@@ -33,9 +33,11 @@ del logo de Batocera, y sigue saliendo después de actualizar Batocera.
 
 ### Qué hace
 
-- Copia la imagen elegida a `/userdata/splash/krum.png`.
-- Instala `/boot/boot-custom.sh`, el mismo que usa sf2, para que en cada arranque
-  se desactive el logo temprano de Batocera.
+- Copia la imagen elegida a `/userdata/splash/krum.png` (splash de arranque) y a
+  `/boot/splash-es.png` (imagen de la pantalla de carga).
+- Instala `/boot/boot-custom.sh`, que en cada arranque desactiva el logo temprano
+  de Batocera y pone nuestra imagen como fondo de la barra de progreso de
+  EmulationStation (`:/logo.png`), para que la barra aparezca sobre ella.
 - Quita el permiso de ejecución a `S03system-splash` y borra su marca de
   "ya mostré el logo".
 - Restaura la línea original de `S28splash` si estaba modificada (era el caso de

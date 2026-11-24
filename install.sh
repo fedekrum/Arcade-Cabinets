@@ -41,16 +41,7 @@ trap 'mount -o remount,ro /boot >/dev/null 2>&1 || true' EXIT
 
 # Archivo clave: lo ejecuta S00bootcustom en cada arranque.
 backup /boot/boot-custom.sh
-cat > /boot/boot-custom.sh <<'EOF'
-#!/bin/sh
-case "$1" in
-  start)
-    # Desactiva logo temprano de Batocera; el splash custom de /userdata/splash lo maneja S28/S30.
-    [ -x /etc/init.d/S03system-splash ] && chmod -x /etc/init.d/S03system-splash
-    rm -f /var/run/system-splash.ready
-    ;;
-esac
-EOF
+cp "$HERE/splash/boot-custom.sh" /boot/boot-custom.sh
 chmod 755 /boot/boot-custom.sh
 
 # La copia en /userdata/system no se usa; en sf2 no existe.
@@ -80,6 +71,11 @@ mkdir -p /userdata/splash
 backup /userdata/splash/krum.png
 cp "$IMG" /userdata/splash/krum.png
 chmod 644 /userdata/splash/krum.png
+
+# Imagen de la barra de carga de EmulationStation (se reaplica en cada arranque).
+backup /boot/splash-es.png
+cp "$IMG" /boot/splash-es.png
+chmod 644 /boot/splash-es.png
 
 # Opciones de splash en userdata y en la configuración de arranque.
 batocera-settings-set \
