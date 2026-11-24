@@ -54,3 +54,15 @@ del logo de Batocera, y sigue saliendo después de actualizar Batocera.
 - Guarda un backup con fecha de cada archivo que modifica, al lado del original.
 
 No cambia otros ajustes del mueble.
+
+## Mame Split
+
+`Mame Split/` deja el sistema `mame` con el nombre **Mame Horizontal** y crea
+**Mame Vertical** para los juegos de `/userdata/roms/mame_vertical`, con el core
+`libretro:mame` por defecto en ambos. Copiar esa carpeta al arcade y correr
+`sh install.sh` como root; tiene su propio `README.md`.
+
+Importante: `es_systems_custom.cfg` **reemplaza** la lista de sistemas de
+Batocera, no se suma a ella. El script lo genera copiando la lista completa para
+que no falten NES, Neo-Geo, etc. Si se crea con solo dos sistemas,
+EmulationStation dice que no encuentra juegos y se queda colgado.

@@ -34,9 +34,17 @@ fi
 mkdir -p /userdata/roms/mame_vertical
 mkdir -p "$(dirname "$CUSTOM")"
 
-if [ -f "$CUSTOM" ]; then
+if [ ! -f "$CUSTOM" ]; then
+  # es_systems_custom.cfg reemplaza la lista stock: hay que arrancar de la
+  # lista completa, si no ES se queda solo con los sistemas que pongamos acá.
+  [ -f /usr/share/emulationstation/es_systems.cfg ] || fail "no encontré la lista stock de sistemas"
+  cp /usr/share/emulationstation/es_systems.cfg "$CUSTOM"
+  log "es_systems_custom.cfg creado desde la lista stock"
+else
   backup "$CUSTOM"
-  python3 - "$CUSTOM" "$HERE/systems.xml" <<'PY'
+fi
+
+python3 - "$CUSTOM" "$HERE/systems.xml" <<'PY'
 import re, sys
 
 custom, template = sys.argv[1], sys.argv[2]
@@ -72,10 +80,6 @@ else:
 
 open(custom, "w", encoding="utf-8").write(s)
 PY
-else
-  cp "$HERE/systems.xml" "$CUSTOM"
-  log "es_systems_custom.cfg creado"
-fi
 
 backup "$VERT"
 cp "$HERE/mame_vertical.cfg" "$VERT"

@@ -25,7 +25,9 @@ vuelve a poner.
 
 - Cambia el nombre del sistema `mame` a **Mame Horizontal**.
 - Crea el sistema **Mame Vertical**, que lee los juegos de
-  `/userdata/roms/mame_vertical`.
+  `/userdata/roms/mame_vertical`. Si no hay un `es_systems_custom.cfg`, lo genera
+  copiando la lista completa de sistemas de Batocera (ese archivo reemplaza a la
+  lista original, no se suma a ella).
 - Deja el core **mame de libretro** como predeterminado en los dos sistemas.
 - Detiene EmulationStation mientras cambia la configuración, para que al
   arrancar no pida correcciones.
