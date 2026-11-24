@@ -59,18 +59,20 @@ del logo de Batocera, y sigue saliendo después de actualizar Batocera.
 
 No cambia otros ajustes del mueble.
 
-## Mame Split
+## Vertical-Horizontal Split
 
-`Mame Split/` deja el sistema `mame` con el nombre **Mame Horizontal** y crea
-**Mame Vertical** para los juegos de `/userdata/roms/mame_vertical`, con el core
-`libretro:mame` por defecto en ambos. Copiar esa carpeta al arcade y correr
-`sh install.sh` como root; tiene su propio `README.md`.
+`Vertical-Horizontal Split/` junta en un solo proceso los dos sistemas que son
+estructuralmente iguales:
 
-`FBNeo Split/` hace lo mismo con FinalBurn Neo: **FBNeo Horizontal** y
-**FBNeo Vertical**, con el core `libretro:fbneo` por defecto.
+- Mame → **Mame Horizontal** y **Mame Vertical** (`/userdata/roms/mame_vertical`)
+- FBNeo → **FBNeo Horizontal** y **FBNeo Vertical** (`/userdata/roms/fbneo_vertical`)
+
+Copiar esa carpeta al arcade y correr `sh install.sh` como root; tiene su propio
+`README.md`. El core por defecto queda en `libretro:mame` o `libretro:fbneo`
+según el sistema.
 
 Importante: `es_systems_custom.cfg` **reemplaza** la lista de sistemas de
-Batocera, no se suma a ella. Los scripts lo generan copiando la lista completa
-para que no falten NES, Neo-Geo, etc. Si se crea con solo dos sistemas,
+Batocera, no se suma a ella. El script la genera copiando la lista completa para
+que no falten NES, Neo-Geo, etc. Si se crea con solo dos sistemas,
 EmulationStation dice que no encuentra juegos y se queda colgado. Cuando el
-archivo ya existe, cada script solo toca su propio bloque.
+archivo ya existe, el script solo toca los bloques de Mame y FBNeo.
