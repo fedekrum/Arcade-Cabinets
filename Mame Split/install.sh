@@ -1,0 +1,88 @@
+#!/bin/sh
+# Deja Mame como "Mame Horizontal" y agrega "Mame Vertical" como en los arcades.
+set -eu
+
+log()  { printf '[mame-split] %s\n' "$*"; }
+fail() { printf '[mame-split] ERROR: %s\n' "$*" >&2; exit 1; }
+
+[ "$(id -u)" -eq 0 ] || fail "hay que ejecutarlo como root"
+[ -d /userdata ] || fail "esto no parece Batocera"
+command -v python3 >/dev/null 2>&1 || fail "falta python3 en el sistema"
+
+HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+TS=$(date +%Y%m%d_%H%M%S)
+[ -f "$HERE/systems.xml" ] || fail "no encontré $HERE/systems.xml"
+[ -f "$HERE/mame_vertical.cfg" ] || fail "no encontré $HERE/mame_vertical.cfg"
+
+backup() {
+  if [ -e "$1" ]; then
+    cp -a "$1" "$1.bak_$TS"
+    log "backup: $1.bak_$TS"
+  fi
+}
+
+CUSTOM=/userdata/system/configs/emulationstation/es_systems_custom.cfg
+VERT=/userdata/system/configs/emulationstation/es_systems_mame_vertical.cfg
+
+log "configurando Mame Horizontal / Mame Vertical"
+
+# Los cambios de sistemas se hacen con ES detenido.
+if [ -x /etc/init.d/S31emulationstation ]; then
+  /etc/init.d/S31emulationstation stop >/dev/null 2>&1 || true
+fi
+
+mkdir -p /userdata/roms/mame_vertical
+mkdir -p "$(dirname "$CUSTOM")"
+
+if [ -f "$CUSTOM" ]; then
+  backup "$CUSTOM"
+  python3 - "$CUSTOM" "$HERE/systems.xml" <<'PY'
+import re, sys
+
+custom, template = sys.argv[1], sys.argv[2]
+s = open(custom, encoding="utf-8").read()
+t = open(template, encoding="utf-8").read()
+
+def bloque(texto, nombre):
+    patron = r"<system>(?:(?!</system>).)*?<name>%s</name>(?:(?!</system>).)*?</system>" % re.escape(nombre)
+    m = re.search(patron, texto, re.S)
+    return m.group(0) if m else None
+
+mame = bloque(s, "mame")
+if mame:
+    if "<fullname>Mame Horizontal</fullname>" not in mame:
+        if "<fullname>" in mame:
+            nuevo = re.sub(r"<fullname>[^<]*</fullname>", "<fullname>Mame Horizontal</fullname>", mame, count=1)
+        else:
+            nuevo = mame.replace("<system>", "<system>\n    <fullname>Mame Horizontal</fullname>", 1)
+        s = s.replace(mame, nuevo, 1)
+        print("[mame-split] Mame -> Mame Horizontal")
+    else:
+        print("[mame-split] Mame ya se llamaba Mame Horizontal")
+else:
+    print("[mame-split] Mame: no encontré el bloque, revisalo a mano")
+
+if bloque(s, "mame_vertical"):
+    print("[mame-split] mame_vertical ya estaba en es_systems_custom.cfg")
+else:
+    vertical = bloque(t, "mame_vertical")
+    if vertical and "</systemList>" in s:
+        s = s.replace("</systemList>", vertical + "\n</systemList>", 1)
+        print("[mame-split] mame_vertical agregado a es_systems_custom.cfg")
+
+open(custom, "w", encoding="utf-8").write(s)
+PY
+else
+  cp "$HERE/systems.xml" "$CUSTOM"
+  log "es_systems_custom.cfg creado"
+fi
+
+backup "$VERT"
+cp "$HERE/mame_vertical.cfg" "$VERT"
+
+# Core por defecto en ambos sistemas: libretro:mame.
+batocera-settings-set \
+  mame.core mame mame.emulator libretro \
+  mame_vertical.core mame mame_vertical.emulator libretro
+
+log "listo. Reiniciá el arcade para ver Mame Horizontal y Mame Vertical."
