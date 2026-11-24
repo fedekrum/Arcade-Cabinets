@@ -27,8 +27,9 @@ backup() {
 }
 
 case "$MODE" in
-  vertical)   IMG="$HERE/splash/vertical.png";    ES_IMG="$HERE/splash/vertical-es.png"; ROT=3 ;;  # 90° CCW, como pacman
-  horizontal) IMG="$HERE/splash/horizontal.png"; ES_IMG="$HERE/splash/horizontal.png"; ROT=0 ;;
+  # Grillas: valores de sf2 para horizontal, de pacman para vertical.
+  vertical)   IMG="$HERE/splash/vertical.png";    ES_IMG="$HERE/splash/vertical-es.png"; ROT=3; GRID_ALL="4 5"; GRID_VERT="4 3" ;;  # 90° CCW, como pacman
+  horizontal) IMG="$HERE/splash/horizontal.png"; ES_IMG="$HERE/splash/horizontal.png"; ROT=0; GRID_ALL="4 5"; GRID_VERT="6 3" ;;
 esac
 [ -f "$IMG" ] || fail "no encontré $IMG (copiá la carpeta splash junto a install.sh)"
 [ -f "$ES_IMG" ] || fail "no encontré $ES_IMG (falta la imagen de la barra de carga)"
@@ -98,6 +99,26 @@ if [ -f "$ES_SETTINGS" ]; then
   else
     sed -i '/<\/config>/i\	<bool name="audio.bgmusic" value="false" />' "$ES_SETTINGS"
   fi
+
+  # Vista en grilla: default horizontal para todo y grilla propia de Mame Vertical.
+  python3 - "$ES_SETTINGS" "$GRID_ALL" "$GRID_VERT" <<'PY'
+import re, sys
+
+p, grid_all, grid_vert = sys.argv[1:4]
+s = open(p, encoding="utf-8").read()
+
+def poner(texto, nombre, valor):
+    patron = r'<string name="%s" value="[^"]*"\s*/>' % re.escape(nombre)
+    nuevo = '<string name="%s" value="%s" />' % (nombre, valor)
+    if re.search(patron, texto):
+        return re.sub(patron, nuevo, texto, count=1)
+    return texto.replace("</config>", "\t" + nuevo + "\n</config>", 1)
+
+s = poner(s, "all.gridSize", grid_all)
+s = poner(s, "mame_vertical.gridSize", grid_vert)
+open(p, "w", encoding="utf-8").write(s)
+print("[install] grillas: all=%s, mame_vertical=%s" % (grid_all, grid_vert))
+PY
 fi
 sed -i '/^splash\.video\.rotation=/d' /userdata/system/batocera.conf
 
