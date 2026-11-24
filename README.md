@@ -44,6 +44,9 @@ del logo de Batocera, y sigue saliendo después de actualizar Batocera.
   pacman).
 - Deja el splash encendido, sin sonido y con 5 segundos de duración; también
   elimina `splash.video.rotation` si quedó de pruebas.
+- Fija la rotación: `display.rotate=0` con `-h` y `display.rotate=3` (90° CCW,
+  como pacman) con `-v`. Detiene EmulationStation antes de cambiarla para que
+  Batocera no pida correcciones al iniciarlo.
 - Guarda un backup con fecha de cada archivo que modifica, al lado del original.
 
-No cambia la rotación de la pantalla ni otros ajustes del mueble.
+No cambia otros ajustes del mueble.

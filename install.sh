@@ -27,8 +27,8 @@ backup() {
 }
 
 case "$MODE" in
-  vertical)   IMG="$HERE/splash/vertical.png" ;;
-  horizontal) IMG="$HERE/splash/horizontal.png" ;;
+  vertical)   IMG="$HERE/splash/vertical.png";    ROT=3 ;;  # 90° CCW, como pacman
+  horizontal) IMG="$HERE/splash/horizontal.png"; ROT=0 ;;
 esac
 [ -f "$IMG" ] || fail "no encontré $IMG (copiá la carpeta splash junto a install.sh)"
 command -v python3 >/dev/null 2>&1 || fail "falta python3 en el sistema"
@@ -90,10 +90,17 @@ else
   echo 'splash.screen.enabled=1' >> /boot/batocera-boot.conf
 fi
 
+# Rotación: 0 para horizontal, 3 (90° CCW) para vertical, como pacman.
+# Se cambia con ES detenido; si no, Batocera pide correcciones al iniciarlo.
+if [ -x /etc/init.d/S31emulationstation ]; then
+  /etc/init.d/S31emulationstation stop >/dev/null 2>&1 || true
+fi
+batocera-settings-set display.rotate "$ROT"
+
 # Logo temprano desactivado también para este arranque.
 if [ -e /etc/init.d/S03system-splash ]; then
   chmod 644 /etc/init.d/S03system-splash
 fi
 rm -f /var/run/system-splash.ready
 
-log "listo. Reiniciá el arcade para ver el splash $MODE."
+log "listo (rotación $ROT). Reiniciá el arcade para ver el splash $MODE."
