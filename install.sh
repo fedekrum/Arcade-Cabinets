@@ -5,6 +5,13 @@ set -eu
 log()  { printf '[install] %s\n' "$*"; }
 fail() { printf '[install] ERROR: %s\n' "$*" >&2; exit 1; }
 
+# Por defecto horizontal; -v elige vertical. -h es horizontal, no ayuda.
+case "${1:-}" in
+  -v)     MODE=vertical ;;
+  -h|"")  MODE=horizontal ;;
+  *) fail "uso: $0 [-h|-v]  (-h horizontal por defecto, -v vertical)" ;;
+esac
+
 [ "$(id -u)" -eq 0 ] || fail "hay que ejecutarlo como root"
 [ -d /userdata ] || fail "esto no parece Batocera"
 [ -f /etc/init.d/S00bootcustom ] || fail "no encontré /etc/init.d/S00bootcustom"
@@ -18,20 +25,6 @@ backup() {
     log "backup: $1.bak_$TS"
   fi
 }
-
-# Elegimos imagen: la rotación 1/3 significa mueble vertical.
-ROT=$(batocera-settings-get display.rotate 2>/dev/null || true)
-case "${1:-}" in
-  vertical)   MODE=vertical ;;
-  horizontal) MODE=horizontal ;;
-  "")
-    case "$ROT" in
-      1|3) MODE=vertical ;;
-      *)   MODE=horizontal ;;
-    esac
-    ;;
-  *) fail "uso: $0 [vertical|horizontal]" ;;
-esac
 
 case "$MODE" in
   vertical)   IMG="$HERE/splash/vertical.png" ;;

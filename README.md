@@ -19,12 +19,14 @@ del logo de Batocera, y sigue saliendo después de actualizar Batocera.
    sh install.sh
    ```
 
-   Elige la imagen solo: si `display.rotate` es 1 o 3 usa `vertical.png`; si no,
-   usa `horizontal.png`. También se puede forzar:
+   La imagen se elige por un parámetro: sin parámetro (o con `-h`) se instala
+   la horizontal; con `-v` se instala la vertical. Ojo: `-h` no es de ayuda,
+   significa horizontal.
 
    ```sh
-   sh install.sh vertical
-   sh install.sh horizontal
+   sh install.sh        # horizontal
+   sh install.sh -h     # horizontal
+   sh install.sh -v     # vertical
    ```
 
 3. Reiniciar el arcade.
