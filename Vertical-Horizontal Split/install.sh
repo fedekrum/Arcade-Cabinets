@@ -35,8 +35,29 @@ if [ -x /etc/init.d/S31emulationstation ]; then
   /etc/init.d/S31emulationstation stop >/dev/null 2>&1 || true
 fi
 
+mkdir -p /userdata/roms/mame /userdata/roms/fbneo
 mkdir -p /userdata/roms/mame_vertical /userdata/roms/fbneo_vertical
 mkdir -p "$ESDIR"
+
+# Los zips vienen en el repo: horizontales para mame/fbneo, verticales para
+# sus versiones rotadas. No sobrescribo ROMs que ya estén en la máquina.
+copiar_roms() {
+  origen="$1"
+  shift
+  [ -d "$origen" ] || fail "no encontré $origen (copiá las carpetas roms_* junto a install.sh)"
+  n=0
+  for f in "$origen"/*.zip; do
+    [ -e "$f" ] || continue
+    for destino in "$@"; do
+      cp -n "$f" "$destino/"
+      n=$((n + 1))
+    done
+  done
+  log "$origen: $n copias"
+}
+
+copiar_roms "$HERE/roms_horizontal" /userdata/roms/mame /userdata/roms/fbneo
+copiar_roms "$HERE/roms_vertical" /userdata/roms/mame_vertical /userdata/roms/fbneo_vertical
 
 if [ ! -f "$CUSTOM" ]; then
   # es_systems_custom.cfg reemplaza la lista stock: hay que arrancar de la
