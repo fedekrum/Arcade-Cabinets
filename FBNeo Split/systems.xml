@@ -1,0 +1,41 @@
+<?xml version="1.0"?>
+<systemList>
+  <system>
+    <fullname>FBNeo Horizontal</fullname>
+    <name>fbneo</name>
+    <manufacturer>Arcade</manufacturer>
+    <release>2019</release>
+    <hardware>arcade</hardware>
+    <path>/userdata/roms/fbneo</path>
+    <extension>.7z .zip</extension>
+    <command>batocera-launch %CONTROLLERSCONFIG% -system %SYSTEM% -rom %ROM% -gameinfoxml %GAMEINFOXML% -systemname %SYSTEMNAME%</command>
+    <platform>arcade</platform>
+    <theme>fbneo</theme>
+    <emulators>
+      <emulator name="libretro">
+        <cores>
+          <core default="true">fbneo</core>
+        </cores>
+      </emulator>
+    </emulators>
+  </system>
+  <system>
+    <name>fbneo_vertical</name>
+    <fullname>FBNeo Vertical</fullname>
+    <manufacturer>Arcade</manufacturer>
+    <release>2019</release>
+    <hardware>arcade</hardware>
+    <path>/userdata/roms/fbneo_vertical</path>
+    <extension>.zip .ZIP .7z .7Z</extension>
+    <command>batocera-launch %CONTROLLERSCONFIG% -system %SYSTEM% -rom %ROM% -gameinfoxml %GAMEINFOXML% -systemname %SYSTEMNAME%</command>
+    <platform>arcade</platform>
+    <theme>fbneo</theme>
+    <emulators>
+      <emulator name="libretro">
+        <cores>
+          <core default="true">fbneo</core>
+        </cores>
+      </emulator>
+    </emulators>
+  </system>
+</systemList>

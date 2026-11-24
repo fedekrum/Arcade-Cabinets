@@ -51,9 +51,10 @@ del logo de Batocera, y sigue saliendo después de actualizar Batocera.
   Batocera no pida correcciones al iniciarlo.
 - Apaga la música de fondo de la interfaz de ES (`audio.bgmusic=0` y el ajuste
   `audio.bgmusic` de `es_settings.cfg` en `false`).
-- Ajusta la vista en grilla: `all.gridSize=4 5` para todos los sistemas y
-  `mame_vertical.gridSize` según el mueble (`6 3` con `-h`, como sf2; `4 3` con
-  `-v`, como pacman). No toca las grillas propias de otros sistemas.
+- Ajusta la vista en grilla: `all.gridSize=4 5` para todos los sistemas y las
+  grillas de los sistemas verticales según el mueble (`mame_vertical.gridSize` y
+  `fbneo_vertical.gridSize` = `6 3` con `-h`, como sf2; `4 3` con `-v`, como
+  pacman). No toca las grillas propias de otros sistemas.
 - Guarda un backup con fecha de cada archivo que modifica, al lado del original.
 
 No cambia otros ajustes del mueble.
@@ -65,7 +66,11 @@ No cambia otros ajustes del mueble.
 `libretro:mame` por defecto en ambos. Copiar esa carpeta al arcade y correr
 `sh install.sh` como root; tiene su propio `README.md`.
 
+`FBNeo Split/` hace lo mismo con FinalBurn Neo: **FBNeo Horizontal** y
+**FBNeo Vertical**, con el core `libretro:fbneo` por defecto.
+
 Importante: `es_systems_custom.cfg` **reemplaza** la lista de sistemas de
-Batocera, no se suma a ella. El script lo genera copiando la lista completa para
-que no falten NES, Neo-Geo, etc. Si se crea con solo dos sistemas,
-EmulationStation dice que no encuentra juegos y se queda colgado.
+Batocera, no se suma a ella. Los scripts lo generan copiando la lista completa
+para que no falten NES, Neo-Geo, etc. Si se crea con solo dos sistemas,
+EmulationStation dice que no encuentra juegos y se queda colgado. Cuando el
+archivo ya existe, cada script solo toca su propio bloque.
