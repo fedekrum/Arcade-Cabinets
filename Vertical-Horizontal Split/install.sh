@@ -29,7 +29,8 @@
 #   /userdata/system/batocera.conf (cores por sistema)
 #
 # Notas:
-#   - No se sobrescriben ROMs que ya existan en la máquina (cp -n).
+#   - Si una carpeta de destino ya tiene algún .zip, no se copia ninguna ROM
+#     del repo en esa carpeta.
 #   - Todo archivo existente se respalda con sufijo .bak_<fecha>.
 #===============================================================================
 
@@ -92,20 +93,34 @@ mkdir -p "$ESDIR"
 # ------------------------------------------------------------------------------
 # 4. Copia de ROMs
 #    Horizontales para mame/fbneo, verticales para sus versiones rotadas.
+#    Si el destino ya tiene algún .zip, se respeta tal cual y no se copia nada.
 # ------------------------------------------------------------------------------
+tiene_zips() {
+  for z in "$1"/*.zip; do
+    [ -e "$z" ] && return 0
+  done
+  return 1
+}
+
 copiar_roms() {
   origen="$1"
   shift
   [ -d "$origen" ] || fail "no encontré $origen (copiá las carpetas roms_* junto a install.sh)"
-  n=0
-  for f in "$origen"/*.zip; do
-    [ -e "$f" ] || continue
-    for destino in "$@"; do
-      cp -n "$f" "$destino/"
+
+  for destino in "$@"; do
+    if tiene_zips "$destino"; then
+      log "$destino: ya hay ROMs, no copio nada"
+      continue
+    fi
+
+    n=0
+    for f in "$origen"/*.zip; do
+      [ -e "$f" ] || continue
+      cp "$f" "$destino/"
       n=$((n + 1))
     done
+    log "$origen -> $destino: $n copias"
   done
-  log "$origen: $n copias"
 }
 
 copiar_roms "$HERE/roms_horizontal" /userdata/roms/mame /userdata/roms/fbneo
