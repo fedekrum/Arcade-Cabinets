@@ -22,7 +22,7 @@
 #   ARCADE_INSTALL_DIR  destino del repo (por defecto /userdata/arcade-cabinets)
 #
 # Efectos:
-#   - Ejecuta Apariencia/install.sh, splash/install.sh,
+#   - Ejecuta Apariencia/install.sh, Splash/install.sh,
 #     Vertical-Horizontal Split/install.sh y Pygame/install.sh.
 #   - Al terminar borra el repo descargado, el directorio temporal y el propio
 #     script si se ejecutó desde /tmp. No queda nada del proceso salvo lo que
@@ -118,7 +118,7 @@ log "repo listo en $DEST"
 # 5. Instaladores por módulo
 #    Cada instalador usa solamente los archivos de su propia carpeta.
 # ------------------------------------------------------------------------------
-for sub in "Apariencia/install.sh" "splash/install.sh" "Vertical-Horizontal Split/install.sh" "Pygame/install.sh"; do
+for sub in "Apariencia/install.sh" "Splash/install.sh" "Vertical-Horizontal Split/install.sh" "Pygame/install.sh"; do
   [ -f "$DEST/$sub" ] || fail "falta $DEST/$sub"
   log "ejecutando $sub $FLAG"
   sh "$DEST/$sub" "$FLAG"

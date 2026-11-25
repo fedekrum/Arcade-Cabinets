@@ -29,7 +29,7 @@ se borra solo al finalizar. Si lo ejecutás desde el repo, se conserva.
 Cada carpeta tiene su propio `install.sh` y solo usa archivos que están dentro
 de su carpeta:
 
-- `splash/install.sh`: imágenes de arranque y de la barra de carga, rotación,
+- `Splash/install.sh`: imágenes de arranque y de la barra de carga, rotación,
   grillas y música de fondo. Acepta `-h`/`-v`.
 - `Vertical-Horizontal Split/install.sh`: sistemas Mame/FBNeo horizontales y
   verticales, cores y copia de ROMs. Acepta `-h`/`-v`; por ahora el modo no

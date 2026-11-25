@@ -6,7 +6,7 @@
 # Descripción:
 #   Instala las imágenes de arranque, el fondo de la barra de carga, la rotación,
 #   la resolución y las grillas de EmulationStation. Usa solamente archivos que
-#   están dentro de la carpeta splash/.
+#   están dentro de la carpeta Splash/.
 #
 # Uso:
 #   sh install.sh [-h|-v]

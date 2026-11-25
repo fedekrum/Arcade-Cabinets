@@ -41,4 +41,4 @@ suma a ella: si no existe, el script la genera copiando la lista completa para
 que no falten NES, Neo-Geo, etc. Si ya existe, solo toca los bloques de Mame y
 FBNeo y deja los demás sistemas como estaban.
 
-No cambia la rotación de la pantalla: eso lo hace `splash/install.sh`.
+No cambia la rotación de la pantalla: eso lo hace `Splash/install.sh`.
