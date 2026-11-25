@@ -4,9 +4,9 @@
 # Arcade Cabinets - Instalador de apariencia
 #===============================================================================
 # Descripción:
-#   Aplica la selección de shaders usada en los arcades. No copia archivos de
-#   shader: Batocera ya los incluye en /usr/share/batocera/shaders y el set se
-#   elige desde batocera.conf.
+#   Aplica la selección de shaders usada en los arcades y las credenciales de
+#   ScreenScraper. No copia archivos de shader: Batocera ya los incluye en
+#   /usr/share/batocera/shaders y el set se elige desde batocera.conf.
 #
 # Uso:
 #   sh install.sh [-h|-v]
@@ -19,6 +19,7 @@
 #   mame_vertical.shaderset = curvature
 #   gameandwatch.shaderset  = none
 #   FBNeo hereda el global.
+#   ScreenScraperUser/Pass en es_settings.cfg (ver scrappers.md).
 #
 # Requisitos:
 #   - Ejecutar como root dentro de Batocera (debe existir /userdata).
@@ -70,3 +71,38 @@ batocera-settings-set \
   gameandwatch.shaderset none
 
 log "shaders aplicados: global/mame/mame_vertical=curvature, gameandwatch=none"
+
+# ------------------------------------------------------------------------------
+# 4. Credenciales de ScreenScraper
+#    ES se detiene antes de escribir para que no sobrescriba es_settings.cfg
+#    al salir. Valores documentados en scrappers.md.
+# ------------------------------------------------------------------------------
+ES_SETTINGS=/userdata/system/configs/emulationstation/es_settings.cfg
+if [ -f "$ES_SETTINGS" ]; then
+  if [ -x /etc/init.d/S31emulationstation ]; then
+    /etc/init.d/S31emulationstation stop >/dev/null 2>&1 || true
+  fi
+  cp -a "$ES_SETTINGS" "$ES_SETTINGS.bak_$TS"
+  log "backup: $ES_SETTINGS.bak_$TS"
+
+  python3 - "$ES_SETTINGS" <<'PY'
+import re, sys
+
+p = sys.argv[1]
+s = open(p, encoding="utf-8").read()
+
+def poner(texto, nombre, valor):
+    patron = r'<string name="%s" value="[^"]*"\s*/>' % re.escape(nombre)
+    nuevo = '<string name="%s" value="%s" />' % (nombre, valor)
+    if re.search(patron, texto):
+        return re.sub(patron, nuevo, texto, count=1)
+    return texto.replace("</config>", "\t" + nuevo + "\n</config>", 1)
+
+s = poner(s, "ScreenScraperUser", "fedekrum")
+s = poner(s, "ScreenScraperPass", "HjCTfjBGeR62zJ")
+open(p, "w", encoding="utf-8").write(s)
+PY
+  log "credenciales de ScreenScraper aplicadas"
+else
+  log "no encontré $ES_SETTINGS; credenciales no aplicadas"
+fi
