@@ -17,7 +17,8 @@ En las Pi, el set `curvature` usa `crt/fakelottes` para los sistemas de arcade.
 `install.sh` aplica los ajustes con `batocera-settings-set`: set global
 `curvature`, MAME/MAME vertical `curvature` y Game and Watch `none`. No copia
 archivos de shader: Batocera ya los trae en `/usr/share/batocera/shaders`.
-También escribe las credenciales de ScreenScraper en `es_settings.cfg`.
+También escribe las credenciales de ScreenScraper en `es_settings.cfg` y deja
+`FavoritesFirst=true` como default global, quitando el override de atari2600.
 
 ## Archivos
 
