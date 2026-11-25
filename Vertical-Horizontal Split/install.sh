@@ -29,8 +29,8 @@
 #   /userdata/system/batocera.conf (cores por sistema)
 #
 # Notas:
-#   - Si una carpeta de destino ya tiene algún .zip o un gamelist.xml, no se
-#     copia nada del repo en esa carpeta.
+#   - Si una carpeta de destino ya tiene algún .zip, un gamelist.xml o una
+#     carpeta images/, no se copia nada del repo en esa carpeta.
 #   - Si no tiene ninguno, se copian las ROMs, el gamelist.xml y las imágenes.
 #   - Todo archivo existente se respalda con sufijo .bak_<fecha>.
 #===============================================================================
@@ -94,14 +94,16 @@ mkdir -p "$ESDIR"
 # ------------------------------------------------------------------------------
 # 4. Copia de ROMs y metadata del scrapping
 #    Horizontales para mame/fbneo, verticales para sus versiones rotadas.
-#    Si el destino ya tiene zips o gamelist.xml, se respeta tal cual y no se
-#    copia nada. Si no tiene ninguno, se copia todo: ROMs, gamelist e imágenes.
+#    Si el destino ya tiene zips, gamelist.xml o images/, se respeta tal cual y
+#    no se copia nada. Si no tiene ninguno, se copia todo: ROMs, gamelist e
+#    imágenes.
 # ------------------------------------------------------------------------------
 tiene_datos() {
   for z in "$1"/*.zip; do
     [ -e "$z" ] && return 0
   done
   [ -f "$1/gamelist.xml" ] && return 0
+  [ -d "$1/images" ] && return 0
   return 1
 }
 
@@ -112,7 +114,7 @@ copiar_roms() {
 
   for destino in "$@"; do
     if tiene_datos "$destino"; then
-      log "$destino: ya hay ROMs o gamelist, no copio nada"
+      log "$destino: ya hay ROMs, gamelist o images, no copio nada"
       continue
     fi
 
