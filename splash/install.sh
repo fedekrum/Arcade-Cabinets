@@ -53,18 +53,21 @@ if [ -e /userdata/system/boot-custom.sh ]; then
   rm -f /userdata/system/boot-custom.sh
 fi
 
-# S28splash: volver a la línea original de fbv si pacman la había parcheado.
+# S28splash: fbv estira siempre la imagen al framebuffer, sin conservar la
+# proporción. Normaliza tanto la línea de pacman como la original de Batocera.
 backup /etc/init.d/S28splash
 python3 - <<'PY'
+import re
 p = "/etc/init.d/S28splash"
 s = open(p).read()
-patched = 'start-stop-daemon -S -b -q -m -p /var/run/user-splash-image.pid -x /bin/sh -- -c "fbv -f -i \\"$image\\" </dev/tty1 >/dev/null 2>&1"'
-stock = 'start-stop-daemon -S -b -q -m -p /var/run/user-splash-image.pid --exec /usr/bin/fbv -- -f -i "$image"'
-if patched in s:
-    open(p, "w").write(s.replace(patched, stock))
-    print("[splash] S28splash: línea fbv restaurada")
-elif stock in s:
-    print("[splash] S28splash: ya estaba como en sf2")
+canonical = 'start-stop-daemon -S -b -q -m -p /var/run/user-splash-image.pid --exec /usr/bin/fbv -- -f -e -r -i "$image"'
+pat = r'^[ \t]*start-stop-daemon[^\n]*fbv[^\n]*$'
+new, n = re.subn(pat, canonical, s, count=1, flags=re.M)
+if n and new != s:
+    open(p, "w").write(new)
+    print("[splash] S28splash: fbv estira sin conservar proporción")
+elif canonical in s:
+    print("[splash] S28splash: fbv ya estaba como en sf2")
 else:
     print("[splash] S28splash: no reconocí la línea fbv, revisala a mano")
 PY
@@ -123,6 +126,37 @@ print("[splash] grillas: all=%s, mame_vertical=%s, fbneo_vertical=%s" % (grid_al
 PY
 fi
 sed -i '/^splash\.video\.rotation=/d' /userdata/system/batocera.conf
+
+# ES: el fondo del splash se estira a toda la pantalla. `size` estira la
+# imagen; `maxSize`/`minSize` conservan la proporción y dejan bordes.
+THEME_SET=$(sed -n 's/.*<string name="ThemeSet" value="\([^"]*\)".*/\1/p' "$ES_SETTINGS" 2>/dev/null | head -1)
+SPLASH_XML="/usr/share/emulationstation/themes/${THEME_SET:-es-theme-carbon}/gamesplash.xml"
+if [ -f "$SPLASH_XML" ]; then
+  backup "$SPLASH_XML"
+  python3 - "$SPLASH_XML" <<'PY'
+import re, sys
+p = sys.argv[1]
+s = open(p, encoding="utf-8-sig").read()
+canonical = "<size>1 1</size>"
+m = re.search(r'(<view name="splash">.*?<image name="background">)(.*?)(</image>)', s, re.S)
+if not m:
+    print("[splash] gamesplash.xml: no encontré el fondo del splash, revisalo a mano")
+else:
+    body = m.group(2)
+    if "<size>" in body:
+        newbody = re.sub(r"<size>[^<]*</size>", canonical, body, count=1)
+    else:
+        newbody = re.sub(r"<(?:min|max)Size>[^<]*</(?:min|max)Size>", canonical, body, count=1)
+    if newbody == body and canonical in body:
+        print("[splash] gamesplash.xml: ya estiraba el fondo")
+    else:
+        s = s[:m.start(2)] + newbody + s[m.end(2):]
+        open(p, "w", encoding="utf-8").write(s)
+        print("[splash] gamesplash.xml: fondo estirado a 1 1")
+PY
+else
+  log "no encontré gamesplash.xml del tema '$THEME_SET'; ES queda sin ajustar"
+fi
 
 if grep -q '^splash\.screen\.enabled=' /boot/batocera-boot.conf; then
   sed -i 's/^splash\.screen\.enabled=.*/splash.screen.enabled=1/' /boot/batocera-boot.conf
