@@ -6,6 +6,14 @@ set -eu
 log()  { printf '[vh-split] %s\n' "$*"; }
 fail() { printf '[vh-split] ERROR: %s\n' "$*" >&2; exit 1; }
 
+# El script principal le pasa -h/-v. Acá se copian ambos juegos, así que el
+# modo solo se registra; no cambia qué archivos se instalan.
+case "${1:-}" in
+  -v)     MODO=vertical ;;
+  -h|"")  MODO=horizontal ;;
+  *) fail "uso: $0 [-h|-v]" ;;
+esac
+
 [ "$(id -u)" -eq 0 ] || fail "hay que ejecutarlo como root"
 [ -d /userdata ] || fail "esto no parece Batocera"
 command -v python3 >/dev/null 2>&1 || fail "falta python3 en el sistema"
@@ -28,7 +36,7 @@ backup() {
 ESDIR=/userdata/system/configs/emulationstation
 CUSTOM=$ESDIR/es_systems_custom.cfg
 
-log "configurando Mame Horizontal/Vertical y FBNeo Horizontal/Vertical"
+log "configurando Mame Horizontal/Vertical y FBNeo Horizontal/Vertical (modo $MODO)"
 
 # Los cambios de sistemas se hacen con ES detenido.
 if [ -x /etc/init.d/S31emulationstation ]; then

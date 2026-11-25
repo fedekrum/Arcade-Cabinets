@@ -9,3 +9,16 @@ pantalla.
 
 Las dejo acá para no perderlas y poder ponerlas de nuevo si cambio la tarjeta
 o hago una actualización.
+
+## Instalador
+
+`install.sh`, en esta misma carpeta, instala la imagen elegida y los ajustes de
+pantalla/grillas. Solo usa archivos que están acá (`*.png` y `boot-custom.sh`).
+
+```sh
+sh install.sh -h   # horizontal
+sh install.sh -v   # vertical
+```
+
+Sin parámetro también instala la horizontal. El instalador principal de la
+raíz le pasa el modo automáticamente.
