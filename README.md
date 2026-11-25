@@ -32,5 +32,8 @@ de su carpeta:
 - `Apariencia/install.sh`: selección de shaders (global, MAME y Game and Watch).
   No copia archivos: Batocera ya incluye los shaders y se eligen desde
   `batocera.conf`. Acepta `-h`/`-v` pero el modo no cambia nada.
+- `Pygame/install.sh`: herramientas Verticalizer y Referencia para el sistema
+  pygame, y ajuste de ese sistema para ejecutar los `.pygame` con `%ROM%`.
+  Acepta `-h`/`-v` pero el modo no cambia nada.
 
 Después de correr el instalador, reiniciá el arcade.

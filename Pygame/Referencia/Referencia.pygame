@@ -1,0 +1,435 @@
+#!/usr/bin/env python3
+import pygame
+import os
+import sys
+
+# Agregar carpeta resources al path para importar librerías locales
+resources_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'resources')
+if os.path.exists(resources_dir):
+    sys.path.insert(0, resources_dir)
+
+try:
+    import mistune
+    MARKDOWN_AVAILABLE = True
+except ImportError:
+    MARKDOWN_AVAILABLE = False
+
+# Inicializar Pygame
+pygame.init()
+
+# Obtener resolución configurada por Batocera
+display_info = pygame.display.Info()
+WIDTH = display_info.current_w
+HEIGHT = display_info.current_h
+
+# Configuración
+FPS = 60
+SCROLL_SPEED = 10
+TEXT_FONT_SIZE = 19  # 15 * 1.25
+TEXT_LINE_HEIGHT = 23  # 18 * 1.25 (redondeado)
+ERROR_FONT_SIZE = 72
+MD_H1_SIZE = 30  # 24 * 1.25
+MD_H2_SIZE = 26  # 21 * 1.25 (redondeado)
+MD_H3_SIZE = 23  # 18 * 1.25 (redondeado)
+MD_BOLD_WEIGHT = True
+
+# Colores
+BLACK = (0, 0, 0)
+WHITE = (255, 255, 255)
+
+# Configurar pantalla en modo pantalla completa con la resolución máxima
+screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.FULLSCREEN)
+clock = pygame.time.Clock()
+
+# Directorio de medios
+media_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'media')
+
+# Variables globales para texto
+current_text_surface = None
+current_scroll_offset = 0
+
+def get_files():
+    """Obtener lista de archivos ordenados alfabéticamente"""
+    if not os.path.exists(media_dir):
+        return []
+    
+    extensions_images = ('.png', '.jpg', '.jpeg', '.bmp', '.gif')
+    extensions_text = ('.txt', '.md')
+    
+    files = [f for f in os.listdir(media_dir) if f.lower().endswith(extensions_images + extensions_text)]
+    return sorted(files)
+
+def is_text_file(filename):
+    """Verificar si el archivo es de texto"""
+    return filename.lower().endswith(('.txt', '.md'))
+
+def is_markdown_file(filename):
+    """Verificar si el archivo es Markdown"""
+    return filename.lower().endswith('.md')
+
+def parse_markdown_line_simple(line, font_normal, font_bold):
+    """Parsear una línea de Markdown de forma simple (fallback si mistune no está)"""
+    # Detectar headers
+    if line.startswith('### '):
+        font_header = pygame.font.SysFont('monospace', MD_H3_SIZE, bold=True)
+        return [(line[4:], font_header, WHITE)], MD_H3_SIZE + 2
+    elif line.startswith('## '):
+        font_header = pygame.font.SysFont('monospace', MD_H2_SIZE, bold=True)
+        return [(line[3:], font_header, WHITE)], MD_H2_SIZE + 2
+    elif line.startswith('# '):
+        font_header = pygame.font.SysFont('monospace', MD_H1_SIZE, bold=True)
+        return [(line[2:], font_header, WHITE)], MD_H1_SIZE + 4
+    
+    # Detectar listas
+    if line.startswith('- ') or line.startswith('* '):
+        line = '  • ' + line[2:]
+    
+    # Parsear bold y código inline
+    result = []
+    current_text = ''
+    i = 0
+    while i < len(line):
+        # Bold **texto**
+        if i < len(line) - 1 and line[i:i+2] == '**':
+            if current_text:
+                result.append((current_text, font_normal, WHITE))
+                current_text = ''
+            end = line.find('**', i + 2)
+            if end != -1:
+                bold_text = line[i+2:end]
+                result.append((bold_text, font_bold, WHITE))
+                i = end + 2
+                continue
+        # Código `texto`
+        elif line[i] == '`':
+            if current_text:
+                result.append((current_text, font_normal, WHITE))
+                current_text = ''
+            end = line.find('`', i + 1)
+            if end != -1:
+                code_text = line[i+1:end]
+                result.append((code_text, font_normal, (150, 200, 255)))
+                i = end + 1
+                continue
+        
+        current_text += line[i]
+        i += 1
+    
+    if current_text:
+        result.append((current_text, font_normal, WHITE))
+    
+    return result if result else [('', font_normal, WHITE)], TEXT_LINE_HEIGHT
+
+def load_text_as_surface(filename):
+    """Cargar archivo de texto y renderizarlo como una superficie"""
+    global current_text_surface, current_scroll_offset
+    
+    file_path = os.path.join(media_dir, filename)
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            lines = f.readlines()
+        
+        # Configuración de fuentes
+        font_normal = pygame.font.SysFont('monospace', TEXT_FONT_SIZE)
+        font_bold = pygame.font.SysFont('monospace', TEXT_FONT_SIZE, bold=True)
+        text_width = WIDTH
+        is_md = is_markdown_file(filename)
+        
+        # Renderizar todas las líneas
+        rendered_lines = []
+        line_heights = []
+        in_code_block = False
+        
+        for line in lines:
+            line = line.rstrip('\n')
+            
+            # Detectar inicio/fin de bloque de código
+            if is_md and line.strip().startswith('```'):
+                in_code_block = not in_code_block
+                # Renderizar la línea de los backticks (opcional, o saltarla)
+                continue
+            
+            if not line:
+                rendered_lines.append([(font_normal.render(' ', True, WHITE), 0)])
+                line_heights.append(TEXT_LINE_HEIGHT)
+                continue
+            
+            # Si estamos en un bloque de código, renderizar sin formato ni word wrap
+            if in_code_block:
+                rendered_lines.append([(font_normal.render(line, True, WHITE), 0)])
+                line_heights.append(TEXT_LINE_HEIGHT)
+                continue
+            
+            # Si es Markdown, parsear formato
+            if is_md:
+                segments, line_h = parse_markdown_line_simple(line, font_normal, font_bold)
+                
+                # Renderizar con word wrap palabra por palabra a través de todos los segmentos
+                rendered_segments = []
+                x_offset = 0
+                
+                for text, font, color in segments:
+                    if not text:
+                        continue
+                    
+                    # Dividir el segmento en palabras
+                    words = text.split(' ')
+                    
+                    for word_idx, word in enumerate(words):
+                        if not word:
+                            continue
+                        
+                        # Agregar espacio antes de la palabra si no es la primera palabra del segmento
+                        # y si hay contenido en la línea actual
+                        if word_idx > 0 or x_offset > 0:
+                            # Intentar agregar con espacio
+                            test_surf = font.render(' ' + word, True, color)
+                            if x_offset + test_surf.get_width() <= text_width:
+                                rendered_segments.append((test_surf, x_offset))
+                                x_offset += test_surf.get_width()
+                            else:
+                                # No cabe con espacio, guardar línea actual y empezar nueva
+                                if rendered_segments:
+                                    rendered_lines.append(rendered_segments)
+                                    line_heights.append(line_h)
+                                    rendered_segments = []
+                                    x_offset = 0
+                                
+                                # Renderizar palabra sin espacio en nueva línea
+                                word_surf = font.render(word, True, color)
+                                if word_surf.get_width() <= text_width:
+                                    rendered_segments.append((word_surf, 0))
+                                    x_offset = word_surf.get_width()
+                                else:
+                                    # Palabra muy larga, dividir por caracteres
+                                    char_line = ''
+                                    for char in word:
+                                        if font.render(char_line + char, True, color).get_width() <= text_width:
+                                            char_line += char
+                                        else:
+                                            if char_line:
+                                                rendered_lines.append([(font.render(char_line, True, color), 0)])
+                                                line_heights.append(line_h)
+                                            char_line = char
+                                    if char_line:
+                                        char_surf = font.render(char_line, True, color)
+                                        rendered_segments.append((char_surf, 0))
+                                        x_offset = char_surf.get_width()
+                        else:
+                            # Primera palabra del texto, sin espacio
+                            word_surf = font.render(word, True, color)
+                            if x_offset + word_surf.get_width() <= text_width:
+                                rendered_segments.append((word_surf, x_offset))
+                                x_offset += word_surf.get_width()
+                            else:
+                                # No cabe, guardar línea actual y empezar nueva
+                                if rendered_segments:
+                                    rendered_lines.append(rendered_segments)
+                                    line_heights.append(line_h)
+                                    rendered_segments = []
+                                
+                                if word_surf.get_width() <= text_width:
+                                    rendered_segments.append((word_surf, 0))
+                                    x_offset = word_surf.get_width()
+                                else:
+                                    # Palabra muy larga, dividir por caracteres
+                                    char_line = ''
+                                    for char in word:
+                                        if font.render(char_line + char, True, color).get_width() <= text_width:
+                                            char_line += char
+                                        else:
+                                            if char_line:
+                                                rendered_lines.append([(font.render(char_line, True, color), 0)])
+                                                line_heights.append(line_h)
+                                            char_line = char
+                                    if char_line:
+                                        char_surf = font.render(char_line, True, color)
+                                        rendered_segments.append((char_surf, 0))
+                                        x_offset = char_surf.get_width()
+                
+                if rendered_segments:
+                    rendered_lines.append(rendered_segments)
+                    line_heights.append(line_h)
+            else:
+                # Texto plano simple con word wrap
+                line_width, _ = font_normal.size(line)
+                if line_width <= text_width:
+                    rendered_lines.append([(font_normal.render(line, True, WHITE), 0)])
+                    line_heights.append(TEXT_LINE_HEIGHT)
+                else:
+                    current_line = ''
+                    for char in line:
+                        test_line = current_line + char
+                        test_width, _ = font_normal.size(test_line)
+                        
+                        if test_width <= text_width:
+                            current_line = test_line
+                        else:
+                            if current_line:
+                                rendered_lines.append([(font_normal.render(current_line, True, WHITE), 0)])
+                                line_heights.append(TEXT_LINE_HEIGHT)
+                            current_line = char
+                    
+                    if current_line:
+                        rendered_lines.append([(font_normal.render(current_line, True, WHITE), 0)])
+                        line_heights.append(TEXT_LINE_HEIGHT)
+        
+        # Calcular altura total necesaria
+        total_height = sum(line_heights)
+        
+        # Crear superficie con todo el texto
+        text_surface = pygame.Surface((text_width, total_height), pygame.SRCALPHA)
+        text_surface.fill(BLACK)
+        
+        y_offset = 0
+        for i, line_segments in enumerate(rendered_lines):
+            for surf, x_offset in line_segments:
+                text_surface.blit(surf, (x_offset, y_offset))
+            y_offset += line_heights[i]
+        
+        current_text_surface = text_surface
+        current_scroll_offset = 0
+        
+        # Guardar imagen en carpeta temp para revisión
+        temp_dir = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'temp')
+        if not os.path.exists(temp_dir):
+            os.makedirs(temp_dir)
+        
+        # Nombre de archivo basado en el archivo de texto
+        base_name = os.path.splitext(filename)[0]
+        temp_file = os.path.join(temp_dir, f"{base_name}_rendered.png")
+        pygame.image.save(text_surface, temp_file)
+    except:
+        current_text_surface = None
+        current_scroll_offset = 0
+
+def load_image(filename):
+    """Cargar y escalar imagen manteniendo proporción"""
+    image_path = os.path.join(media_dir, filename)
+    try:
+        image = pygame.image.load(image_path)
+        image_width, image_height = image.get_rect().size
+        
+        scale_x = WIDTH / image_width
+        scale_y = HEIGHT / image_height
+        scale = min(scale_x, scale_y)
+        
+        new_width = int(image_width * scale)
+        new_height = int(image_height * scale)
+        
+        return pygame.transform.smoothscale(image, (new_width, new_height))
+    except:
+        return None
+
+def draw_screen(filename):
+    """Dibujar imagen o texto en pantalla"""
+    global current_text_surface, current_scroll_offset
+    
+    screen.fill(BLACK)
+    
+    if filename:
+        if is_text_file(filename):
+            # Mostrar texto con scroll
+            if current_text_surface is None:
+                load_text_as_surface(filename)
+            
+            if current_text_surface:
+                # Limitar scroll
+                max_scroll = max(0, current_text_surface.get_height() - HEIGHT)
+                current_scroll_offset = max(0, min(current_scroll_offset, max_scroll))
+                
+                # Crear rectángulo de la porción visible
+                visible_rect = pygame.Rect(0, current_scroll_offset, 
+                                          current_text_surface.get_width(), 
+                                          min(HEIGHT, current_text_surface.get_height() - current_scroll_offset))
+                
+                # Dibujar la porción visible del texto
+                screen.blit(current_text_surface, (0, 0), visible_rect)
+        else:
+            # Mostrar imagen
+            image = load_image(filename)
+            if image:
+                image_rect = image.get_rect()
+                image_rect.center = screen.get_rect().center
+                screen.blit(image, image_rect)
+    
+    pygame.display.flip()
+
+def show_error_screen(message):
+    """Mostrar pantalla de error y esperar salida"""
+    screen.fill(BLACK)
+    font = pygame.font.Font(None, ERROR_FONT_SIZE)
+    text_surface = font.render(message, True, WHITE)
+    text_rect = text_surface.get_rect(center=(WIDTH // 2, HEIGHT // 2))
+    screen.blit(text_surface, text_rect)
+    pygame.display.flip()
+    
+    waiting = True
+    while waiting:
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                waiting = False
+            elif event.type == pygame.KEYDOWN:
+                if event.key in (pygame.K_ESCAPE, pygame.K_a, pygame.K_b):
+                    waiting = False
+        clock.tick(FPS)
+
+def main():
+    """Función principal"""
+    global current_text_surface, current_scroll_offset
+    
+    files_list = get_files()
+    
+    if not files_list:
+        show_error_screen("No se encontraron archivos")
+        pygame.quit()
+        sys.exit(0)
+    
+    current_file_index = 0
+    draw_screen(files_list[current_file_index])
+    
+    # Bucle principal
+    running = True
+    while running:
+        # Procesar eventos
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                running = False
+            
+            elif event.type == pygame.KEYDOWN:
+                current_file = files_list[current_file_index]
+                
+                # Navegación LEFT/RIGHT (común para textos e imágenes)
+                if event.key == pygame.K_LEFT:
+                    current_file_index = (current_file_index - 1) % len(files_list)
+                    current_text_surface = None
+                    current_scroll_offset = 0
+                    draw_screen(files_list[current_file_index])
+                elif event.key == pygame.K_RIGHT:
+                    current_file_index = (current_file_index + 1) % len(files_list)
+                    current_text_surface = None
+                    current_scroll_offset = 0
+                    draw_screen(files_list[current_file_index])
+                # Salir: ESC/B siempre, A solo para imágenes
+                elif event.key in (pygame.K_ESCAPE, pygame.K_b):
+                    running = False
+                elif event.key == pygame.K_a and not is_text_file(current_file):
+                    running = False
+        
+        # Scroll continuo mientras se mantiene presionada la tecla (solo para textos)
+        if is_text_file(files_list[current_file_index]):
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_UP]:
+                current_scroll_offset += SCROLL_SPEED
+                draw_screen(files_list[current_file_index])
+            elif keys[pygame.K_DOWN]:
+                current_scroll_offset -= SCROLL_SPEED
+                draw_screen(files_list[current_file_index])
+        
+        clock.tick(FPS)
+    
+    pygame.quit()
+    sys.exit(0)
+
+if __name__ == "__main__":
+    main()

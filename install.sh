@@ -23,8 +23,8 @@
 #
 # Efectos:
 #   - Si el destino existe, lo renombra a <destino>.bak_<fecha>.
-#   - Ejecuta Apariencia/install.sh, splash/install.sh y
-#     Vertical-Horizontal Split/install.sh.
+#   - Ejecuta Apariencia/install.sh, splash/install.sh,
+#     Vertical-Horizontal Split/install.sh y Pygame/install.sh.
 #===============================================================================
 
 set -eu
@@ -97,7 +97,7 @@ log "repo listo en $DEST"
 # 5. Instaladores por módulo
 #    Cada instalador usa solamente los archivos de su propia carpeta.
 # ------------------------------------------------------------------------------
-for sub in "Apariencia/install.sh" "splash/install.sh" "Vertical-Horizontal Split/install.sh"; do
+for sub in "Apariencia/install.sh" "splash/install.sh" "Vertical-Horizontal Split/install.sh" "Pygame/install.sh"; do
   [ -f "$DEST/$sub" ] || fail "falta $DEST/$sub"
   log "ejecutando $sub $FLAG"
   sh "$DEST/$sub" "$FLAG"

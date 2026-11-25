@@ -1,0 +1,12 @@
+  <system>
+    <fullname>Python Games</fullname>
+    <name>pygame</name>
+    <manufacturer>Python</manufacturer>
+    <release>1994</release>
+    <hardware>pc</hardware>
+    <path>/userdata/roms/pygame</path>
+    <extension>.pygame</extension>
+    <command>%ROM%</command>
+    <platform>pc</platform>
+    <theme>pygame</theme>
+  </system>
