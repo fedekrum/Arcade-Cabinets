@@ -32,3 +32,7 @@ No hace falta preparar las imágenes a una resolución concreta: se usan las que
 haya en esta carpeta y se deforman lo que haga falta. El instalador reescribe
 `fbv` con `-f -e -r -i` y cambia el fondo del splash del tema por
 `<size>1 1</size>` para que pase lo mismo en ES.
+
+Como Batocera restaura `/etc` y `/usr` al reiniciar, `boot-custom.sh` reaplica las
+opciones de `fbv` y el tamaño del fondo de ES en cada arranque, antes de mostrar
+los splashes.
