@@ -29,8 +29,9 @@
 #   /userdata/system/batocera.conf (cores por sistema)
 #
 # Notas:
-#   - Si una carpeta de destino ya tiene algún .zip, no se copia ninguna ROM
-#     del repo en esa carpeta.
+#   - Si una carpeta de destino ya tiene algún .zip o un gamelist.xml, no se
+#     copia nada del repo en esa carpeta.
+#   - Si no tiene ninguno, se copian las ROMs, el gamelist.xml y las imágenes.
 #   - Todo archivo existente se respalda con sufijo .bak_<fecha>.
 #===============================================================================
 
@@ -91,14 +92,16 @@ mkdir -p /userdata/roms/mame_vertical /userdata/roms/fbneo_vertical
 mkdir -p "$ESDIR"
 
 # ------------------------------------------------------------------------------
-# 4. Copia de ROMs
+# 4. Copia de ROMs y metadata del scrapping
 #    Horizontales para mame/fbneo, verticales para sus versiones rotadas.
-#    Si el destino ya tiene algún .zip, se respeta tal cual y no se copia nada.
+#    Si el destino ya tiene zips o gamelist.xml, se respeta tal cual y no se
+#    copia nada. Si no tiene ninguno, se copia todo: ROMs, gamelist e imágenes.
 # ------------------------------------------------------------------------------
-tiene_zips() {
+tiene_datos() {
   for z in "$1"/*.zip; do
     [ -e "$z" ] && return 0
   done
+  [ -f "$1/gamelist.xml" ] && return 0
   return 1
 }
 
@@ -108,8 +111,8 @@ copiar_roms() {
   [ -d "$origen" ] || fail "no encontré $origen (copiá las carpetas roms_* junto a install.sh)"
 
   for destino in "$@"; do
-    if tiene_zips "$destino"; then
-      log "$destino: ya hay ROMs, no copio nada"
+    if tiene_datos "$destino"; then
+      log "$destino: ya hay ROMs o gamelist, no copio nada"
       continue
     fi
 
@@ -119,7 +122,15 @@ copiar_roms() {
       cp "$f" "$destino/"
       n=$((n + 1))
     done
-    log "$origen -> $destino: $n copias"
+
+    if [ -f "$origen/gamelist.xml" ]; then
+      cp "$origen/gamelist.xml" "$destino/"
+    fi
+    if [ -d "$origen/images" ]; then
+      cp -a "$origen/images" "$destino/"
+    fi
+
+    log "$origen -> $destino: $n zips + gamelist e imágenes"
   done
 }
 

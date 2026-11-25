@@ -28,8 +28,10 @@ Vertical.
   según corresponda).
 - Detiene EmulationStation mientras cambia la configuración.
 - Copia `roms_horizontal/*.zip` a `mame` y `fbneo`, y `roms_vertical/*.zip` a
-  `mame_vertical` y `fbneo_vertical`. Si alguna carpeta de destino ya tiene un
-  `.zip`, no copia nada ahí: respeta lo que ya haya en el mueble.
+  `mame_vertical` y `fbneo_vertical`, junto con el `gamelist.xml` y las imágenes
+  del scrapping que están en esas carpetas del repo. Si alguna carpeta de
+  destino ya tiene un `.zip` o un `gamelist.xml`, no copia nada ahí: respeta lo
+  que ya haya en el mueble.
 - Acepta `-h`/`-v` porque se los pasa el instalador principal; por ahora el
   modo no cambia qué ROMs se copian.
 - Guarda una copia con fecha de los archivos que modifica, al lado del original.
