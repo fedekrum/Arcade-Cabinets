@@ -14,24 +14,23 @@
 # Parámetros:
 #   -h  modo horizontal (valor por defecto)
 #   -v  modo vertical
-#   El modo solo se registra en el log: se copian las ROMs de ambos sentidos.
+#   El modo solo se registra en el log: no cambia los sistemas creados.
 #
 # Requisitos:
 #   - Ejecutar como root dentro de Batocera (debe existir /userdata).
 #   - Necesita python3 para reescribir es_systems_custom.cfg.
-#   - Deben estar en esta carpeta: systems.xml, mame_vertical.cfg,
-#     fbneo_vertical.cfg, roms_horizontal/ y roms_vertical/.
+#   - Deben estar en esta carpeta: systems.xml, mame_vertical.cfg y
+#     fbneo_vertical.cfg.
 #
 # Archivos modificados:
-#   /userdata/roms/{mame,fbneo,mame_vertical,fbneo_vertical}
+#   /userdata/roms/{mame,fbneo,mame_vertical,fbneo_vertical} (solo se crean)
 #   /userdata/system/configs/emulationstation/es_systems_custom.cfg
 #   /userdata/system/configs/emulationstation/es_systems_{mame,fbneo}_vertical.cfg
 #   /userdata/system/batocera.conf (cores por sistema)
 #
 # Notas:
-#   - Si una carpeta de destino ya tiene algún .zip, un gamelist.xml o una
-#     carpeta images/, no se copia nada del repo en esa carpeta.
-#   - Si no tiene ninguno, se copian las ROMs, el gamelist.xml y las imágenes.
+#   - Las ROMs y el gamelist.xml ya no vienen en claro: los instala
+#     Sistemas/install.sh desde DATA/*.tar.gz.gpg.
 #   - No crea respaldos: los archivos se sobrescriben directamente.
 #   - Si el script se bajó suelto a /tmp, se borra solo al terminar.
 #===============================================================================
@@ -93,55 +92,7 @@ mkdir -p /userdata/roms/mame_vertical /userdata/roms/fbneo_vertical
 mkdir -p "$ESDIR"
 
 # ------------------------------------------------------------------------------
-# 4. Copia de ROMs y metadata del scrapping
-#    Horizontales para mame/fbneo, verticales para sus versiones rotadas.
-#    Si el destino ya tiene zips, gamelist.xml o images/, se respeta tal cual y
-#    no se copia nada. Si no tiene ninguno, se copia todo: ROMs, gamelist e
-#    imágenes.
-# ------------------------------------------------------------------------------
-tiene_datos() {
-  for z in "$1"/*.zip; do
-    [ -e "$z" ] && return 0
-  done
-  [ -f "$1/gamelist.xml" ] && return 0
-  [ -d "$1/images" ] && return 0
-  return 1
-}
-
-copiar_roms() {
-  origen="$1"
-  shift
-  [ -d "$origen" ] || fail "no encontré $origen (copiá las carpetas roms_* junto a install.sh)"
-
-  for destino in "$@"; do
-    if tiene_datos "$destino"; then
-      log "$destino: ya hay ROMs, gamelist o images, no copio nada"
-      continue
-    fi
-
-    n=0
-    for f in "$origen"/*.zip; do
-      [ -e "$f" ] || continue
-      cp "$f" "$destino/"
-      n=$((n + 1))
-    done
-
-    if [ -f "$origen/gamelist.xml" ]; then
-      cp "$origen/gamelist.xml" "$destino/"
-    fi
-    if [ -d "$origen/images" ]; then
-      cp -a "$origen/images" "$destino/"
-    fi
-
-    log "$origen -> $destino: $n zips + gamelist e imágenes"
-  done
-}
-
-copiar_roms "$HERE/roms_horizontal" /userdata/roms/mame /userdata/roms/fbneo
-copiar_roms "$HERE/roms_vertical" /userdata/roms/mame_vertical /userdata/roms/fbneo_vertical
-
-# ------------------------------------------------------------------------------
-# 5. Lista de sistemas de EmulationStation
+# 4. Lista de sistemas de EmulationStation
 # ------------------------------------------------------------------------------
 if [ ! -f "$CUSTOM" ]; then
   # es_systems_custom.cfg reemplaza la lista stock: hay que arrancar de la
@@ -199,7 +150,7 @@ for s in mame fbneo; do
 done
 
 # ------------------------------------------------------------------------------
-# 6. Core por defecto en los cuatro sistemas
+# 5. Core por defecto en los cuatro sistemas
 # ------------------------------------------------------------------------------
 batocera-settings-set \
   mame.core mame mame.emulator libretro \

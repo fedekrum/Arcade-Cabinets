@@ -8,11 +8,13 @@
 #   módulo. Los parámetros se reenvían a todos los módulos que los aceptan.
 #
 # Uso:
-#   sh install.sh [-h|-v]
+#   sh install.sh [-h|-v] [-p CLAVE | -pCLAVE]
 #
 # Parámetros:
 #   -h  modo horizontal (valor por defecto)
 #   -v  modo vertical
+#   -p  contraseña de los .tar.gz.gpg de Sistemas/DATA. Acepta -p 1234 y
+#       -p1234. Si no se pasa, ese módulo avisa y salta los archives cifrados.
 #
 # Requisitos:
 #   - Ejecutar como root dentro de Batocera (debe existir /userdata).
@@ -23,7 +25,9 @@
 #
 # Efectos:
 #   - Ejecuta Apariencia/install.sh, Splash/install.sh,
-#     Vertical-Horizontal Split/install.sh y Pygame/install.sh.
+#     Vertical-Horizontal Split/install.sh y Sistemas/install.sh.
+#   - La contraseña de -p se pasa solo a Sistemas/install.sh; los demás
+#     módulos reciben únicamente -h o -v.
 #   - Al terminar borra el repo descargado, el directorio temporal y el propio
 #     script si se ejecutó desde /tmp. No queda nada del proceso salvo lo que
 #     instalaron los módulos.
@@ -60,13 +64,39 @@ limpieza() {
 trap 'limpieza' EXIT
 
 # ------------------------------------------------------------------------------
-# 1. Modo de instalación
+# 1. Modo de instalación y contraseña
+#    Los parámetros se pueden dar en cualquier orden. -p admite las dos formas:
+#    "-p 1234" y "-p1234".
 # ------------------------------------------------------------------------------
-case "${1:-}" in
-  -v)     MODE=vertical;   FLAG=-v ;;
-  -h|"")  MODE=horizontal; FLAG=-h ;;
-  *) fail "uso: $0 [-h|-v]  (-h horizontal por defecto, -v vertical)" ;;
-esac
+MODE=horizontal
+FLAG=-h
+PASS=
+HAS_PASS=0
+
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    -v)
+      MODE=vertical
+      FLAG=-v
+      ;;
+    -h)
+      MODE=horizontal
+      FLAG=-h
+      ;;
+    -p)
+      shift
+      [ "$#" -gt 0 ] || fail "-p necesita una contraseña"
+      PASS=$1
+      HAS_PASS=1
+      ;;
+    -p?*)
+      PASS=${1#-p}
+      HAS_PASS=1
+      ;;
+    *) fail "uso: $0 [-h|-v] [-p CLAVE | -pCLAVE]" ;;
+  esac
+  shift
+done
 
 # ------------------------------------------------------------------------------
 # 2. Validación del entorno
@@ -118,10 +148,17 @@ log "repo listo en $DEST"
 # 5. Instaladores por módulo
 #    Cada instalador usa solamente los archivos de su propia carpeta.
 # ------------------------------------------------------------------------------
-for sub in "Apariencia/install.sh" "Splash/install.sh" "Vertical-Horizontal Split/install.sh" "Pygame/install.sh"; do
+for sub in "Apariencia/install.sh" "Splash/install.sh" "Vertical-Horizontal Split/install.sh" "Sistemas/install.sh"; do
   [ -f "$DEST/$sub" ] || fail "falta $DEST/$sub"
-  log "ejecutando $sub $FLAG"
-  sh "$DEST/$sub" "$FLAG"
+
+  if [ "$sub" = "Sistemas/install.sh" ] && [ "$HAS_PASS" -eq 1 ]; then
+    # La clave viaja solo al módulo que desencripta; los otros ni la reciben.
+    log "ejecutando $sub con -p"
+    sh "$DEST/$sub" "-p$PASS"
+  else
+    log "ejecutando $sub $FLAG"
+    sh "$DEST/$sub" "$FLAG"
+  fi
 done
 
 log "listo. Reiniciá el arcade para ver los cambios."

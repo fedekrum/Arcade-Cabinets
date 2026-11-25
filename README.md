@@ -6,13 +6,19 @@ Notas para instalar Batocera en mis arcades y ajustarlo a mi gusto.
 
 `install.sh`, en la raíz del repo, se ocupa de todo: baja el repo a un
 directorio con `curl` o `wget`, y ejecuta los instaladores de cada carpeta
-pasando `-h` o `-v` a todos los que lo aceptan.
+pasando `-h` o `-v` a todos los que lo aceptan. La contraseña de los sistemas
+cifrados se da con `-p` y se reenvía **solo** a `Sistemas/install.sh`.
 
 ```sh
 wget -O /tmp/install-arcade.sh https://raw.githubusercontent.com/fedekrum/Arcade-Cabinets/master/install.sh
-sh /tmp/install-arcade.sh -h   # horizontal (valor por defecto)
-sh /tmp/install-arcade.sh -v   # vertical
+sh /tmp/install-arcade.sh -h              # horizontal (valor por defecto)
+sh /tmp/install-arcade.sh -v              # vertical
+sh /tmp/install-arcade.sh -v -p1234       # vertical + ROMs cifradas
+sh /tmp/install-arcade.sh -p 1234 -h      # también se acepta -p separado
 ```
+
+Sin `-p`, la instalación sigue normalmente: `Sistemas/install.sh` avisa y salta
+los `.tar.gz.gpg`, pero igual ajusta el sistema pygame.
 
 Se puede cambiar el directorio de trabajo con la variable `ARCADE_INSTALL_DIR`
 (por defecto `/userdata/arcade-cabinets`).
@@ -32,13 +38,14 @@ de su carpeta:
 - `Splash/install.sh`: imágenes de arranque y de la barra de carga, rotación,
   grillas y música de fondo. Acepta `-h`/`-v`.
 - `Vertical-Horizontal Split/install.sh`: sistemas Mame/FBNeo horizontales y
-  verticales, cores y copia de ROMs. Acepta `-h`/`-v`; por ahora el modo no
-  cambia qué ROMs se copian.
+  verticales y cores. Ya no copia ROMs: eso lo hace `Sistemas/install.sh`.
+  Acepta `-h`/`-v`, pero el modo no cambia nada.
+- `Sistemas/install.sh`: instala las ROMs cifradas de `Sistemas/DATA/` y ajusta
+  el sistema pygame para ejecutar los `.pygame` con `%ROM%`. Acepta
+  `-p CLAVE`/`-pCLAVE` (además de `-h`/`-v`, que ignora). Ver
+  [Sistemas/README.md](Sistemas/README.md) para generar nuevos archives.
 - `Apariencia/install.sh`: selección de shaders (global, MAME y Game and Watch).
   No copia archivos: Batocera ya incluye los shaders y se eligen desde
   `batocera.conf`. Acepta `-h`/`-v` pero el modo no cambia nada.
-- `Pygame/install.sh`: herramientas Verticalizer y Referencia para el sistema
-  pygame, y ajuste de ese sistema para ejecutar los `.pygame` con `%ROM%`.
-  Acepta `-h`/`-v` pero el modo no cambia nada.
 
 Después de correr el instalador, reiniciá el arcade.
