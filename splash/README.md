@@ -13,7 +13,8 @@ o hago una actualización.
 ## Instalador
 
 `install.sh`, en esta misma carpeta, instala la imagen elegida y los ajustes de
-pantalla/grillas. Solo usa archivos que están acá (`*.png` y `boot-custom.sh`).
+pantalla/grillas (rotación y `es.resolution=1280x1024`). Solo usa archivos que
+están acá (`*.png` y `boot-custom.sh`).
 
 ```sh
 sh install.sh -h   # horizontal

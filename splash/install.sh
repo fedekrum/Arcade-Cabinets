@@ -133,6 +133,10 @@ fi
 # Rotación: 0 para horizontal, 3 (90° CCW) para vertical, como pacman.
 batocera-settings-set display.rotate "$ROT"
 
+# El framebuffer siempre es 1280x1024 (5:4); con rotate=3 se ve 4:5.
+batocera-settings-set es.resolution 1280x1024
+batocera-settings-set -f /boot/batocera-boot.conf es.resolution 1280x1024
+
 # Logo temprano desactivado también para este arranque.
 if [ -e /etc/init.d/S03system-splash ]; then
   chmod 644 /etc/init.d/S03system-splash
