@@ -96,7 +96,7 @@ log "repo listo en $DEST"
 # 5. Instaladores por módulo
 #    Cada instalador usa solamente los archivos de su propia carpeta.
 # ------------------------------------------------------------------------------
-for sub in "splash/install.sh" "Vertical-Horizontal Split/install.sh"; do
+for sub in "Apariencia/install.sh" "splash/install.sh" "Vertical-Horizontal Split/install.sh"; do
   [ -f "$DEST/$sub" ] || fail "falta $DEST/$sub"
   log "ejecutando $sub $FLAG"
   sh "$DEST/$sub" "$FLAG"

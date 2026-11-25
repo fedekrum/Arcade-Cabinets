@@ -12,8 +12,12 @@ Estado relevado el 2026-11-25 en sf2 (Pi 5) y pacman (Pi 4):
 
 En las Pi, el set `curvature` usa `crt/fakelottes` para los sistemas de arcade.
 
+## Instalador
+
+`install.sh` aplica los ajustes con `batocera-settings-set`: set global
+`curvature`, MAME/MAME vertical `curvature` y Game and Watch `none`. No copia
+archivos de shader: Batocera ya los trae en `/usr/share/batocera/shaders`.
+
 ## Archivos
 
 - `scrappers.md`: credenciales de ScreenScraper relevadas de pacman.
-
-Todavía no hay archivos de configuración de shader en esta carpeta.
