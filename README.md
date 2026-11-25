@@ -34,7 +34,6 @@ de su carpeta:
 - `Vertical-Horizontal Split/install.sh`: sistemas Mame/FBNeo horizontales y
   verticales, cores y copia de ROMs. Acepta `-h`/`-v`; por ahora el modo no
   cambia qué ROMs se copian.
-- `QEMU VM/`: notas del laboratorio local. No se instala en los arcades.
 - `Apariencia/install.sh`: selección de shaders (global, MAME y Game and Watch).
   No copia archivos: Batocera ya incluye los shaders y se eligen desde
   `batocera.conf`. Acepta `-h`/`-v` pero el modo no cambia nada.
