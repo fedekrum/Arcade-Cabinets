@@ -1,18 +1,60 @@
 #!/bin/sh
-# Instala el splash y los ajustes de pantalla/grillas de este mueble.
-# Usa solamente archivos que están dentro de la carpeta splash/.
+#
+#===============================================================================
+# Arcade Cabinets - Instalador de splash y pantalla
+#===============================================================================
+# Descripción:
+#   Instala las imágenes de arranque, el fondo de la barra de carga, la rotación,
+#   la resolución y las grillas de EmulationStation. Usa solamente archivos que
+#   están dentro de la carpeta splash/.
+#
+# Uso:
+#   sh install.sh [-h|-v]
+#
+# Parámetros:
+#   -h  modo horizontal (valor por defecto). -h NO es de ayuda.
+#   -v  modo vertical (rotación 3, 90° CCW).
+#
+# Requisitos:
+#   - Ejecutar como root dentro de Batocera (debe existir /userdata).
+#   - Debe existir /etc/init.d/S00bootcustom.
+#   - Necesita python3 para reescribir archivos XML y de configuración.
+#
+# Archivos modificados:
+#   /boot/boot-custom.sh, /boot/splash-es.png, /boot/batocera-boot.conf
+#   /etc/init.d/S28splash, /etc/init.d/S03system-splash
+#   /userdata/splash/krum.png
+#   /userdata/system/batocera.conf
+#   /userdata/system/configs/emulationstation/es_settings.cfg
+#   tema de ES: gamesplash.xml (el arranque usa splash.xml, que se recompone
+#   desde /boot/boot-custom.sh en cada reinicio)
+#
+# Notas:
+#   - Todo archivo existente se respalda con sufijo .bak_<fecha>.
+#   - Batocera restaura /etc y /usr al reiniciar: la persistencia depende del
+#     hook /boot/boot-custom.sh que se instala más abajo.
+#===============================================================================
+
 set -eu
 
+# ------------------------------------------------------------------------------
+# Utilidades de salida
+# ------------------------------------------------------------------------------
 log()  { printf '[splash] %s\n' "$*"; }
 fail() { printf '[splash] ERROR: %s\n' "$*" >&2; exit 1; }
 
-# Por defecto horizontal; -v elige vertical. -h es horizontal, no ayuda.
+# ------------------------------------------------------------------------------
+# 1. Modo de instalación
+# ------------------------------------------------------------------------------
 case "${1:-}" in
   -v)     MODE=vertical ;;
   -h|"")  MODE=horizontal ;;
   *) fail "uso: $0 [-h|-v]  (-h horizontal por defecto, -v vertical)" ;;
 esac
 
+# ------------------------------------------------------------------------------
+# 2. Validación del entorno y de los archivos propios del módulo
+# ------------------------------------------------------------------------------
 [ "$(id -u)" -eq 0 ] || fail "hay que ejecutarlo como root"
 [ -d /userdata ] || fail "esto no parece Batocera"
 [ -f /etc/init.d/S00bootcustom ] || fail "no encontré /etc/init.d/S00bootcustom"
@@ -38,11 +80,15 @@ command -v python3 >/dev/null 2>&1 || fail "falta python3 en el sistema"
 
 log "instalando splash $MODE"
 
-# /boot se monta solo lectura en Batocera.
+# /boot se monta solo lectura en Batocera; se restaura al salir.
 mount -o remount,rw /boot 2>/dev/null || fail "no pude montar /boot en lectura/escritura"
 trap 'mount -o remount,ro /boot >/dev/null 2>&1 || true' EXIT
 
-# Archivo clave: lo ejecuta S00bootcustom en cada arranque.
+# ------------------------------------------------------------------------------
+# 3. Hook de arranque persistente
+#    Lo ejecuta S00bootcustom en cada inicio y reaplica los cambios que Batocera
+#    restaura en /etc y /usr.
+# ------------------------------------------------------------------------------
 backup /boot/boot-custom.sh
 cp "$HERE/boot-custom.sh" /boot/boot-custom.sh
 chmod 755 /boot/boot-custom.sh
@@ -53,8 +99,11 @@ if [ -e /userdata/system/boot-custom.sh ]; then
   rm -f /userdata/system/boot-custom.sh
 fi
 
-# S28splash: fbv estira siempre la imagen al framebuffer, sin conservar la
-# proporción. Normaliza tanto la línea de pacman como la original de Batocera.
+# ------------------------------------------------------------------------------
+# 4. Splash de fbv
+#    Se normaliza la línea de S28splash para que estire sin conservar
+#    proporción, tanto en la línea stock como en la variante de pacman.
+# ------------------------------------------------------------------------------
 backup /etc/init.d/S28splash
 python3 - <<'PY'
 import re
@@ -72,7 +121,9 @@ else:
     print("[splash] S28splash: no reconocí la línea fbv, revisala a mano")
 PY
 
-# Imagen del splash.
+# ------------------------------------------------------------------------------
+# 5. Imágenes de splash
+# ------------------------------------------------------------------------------
 mkdir -p /userdata/splash
 backup /userdata/splash/krum.png
 cp "$IMG" /userdata/splash/krum.png
@@ -83,8 +134,11 @@ backup /boot/splash-es.png
 cp "$ES_IMG" /boot/splash-es.png
 chmod 644 /boot/splash-es.png
 
-# Los cambios de configuración se hacen con ES detenido: si no, al iniciarlo
-# pide correcciones y puede sobrescribir es_settings.cfg al salir.
+# ------------------------------------------------------------------------------
+# 6. Configuración de EmulationStation
+#    ES se detiene antes de escribir: al salir podría sobrescribir
+#    es_settings.cfg con valores en memoria.
+# ------------------------------------------------------------------------------
 if [ -x /etc/init.d/S31emulationstation ]; then
   /etc/init.d/S31emulationstation stop >/dev/null 2>&1 || true
 fi
@@ -127,8 +181,8 @@ PY
 fi
 sed -i '/^splash\.video\.rotation=/d' /userdata/system/batocera.conf
 
-# ES: el fondo del splash se estira a toda la pantalla. `size` estira la
-# imagen; `maxSize`/`minSize` conservan la proporción y dejan bordes.
+# gamesplash.xml: fondo de la carga de juegos. `size` estira la imagen;
+# `maxSize`/`minSize` conservan la proporción y dejan bordes.
 THEME_SET=$(sed -n 's/.*<string name="ThemeSet" value="\([^"]*\)".*/\1/p' "$ES_SETTINGS" 2>/dev/null | head -1)
 SPLASH_XML="/usr/share/emulationstation/themes/${THEME_SET:-es-theme-carbon}/gamesplash.xml"
 if [ -f "$SPLASH_XML" ]; then
@@ -164,10 +218,11 @@ else
   echo 'splash.screen.enabled=1' >> /boot/batocera-boot.conf
 fi
 
-# Rotación: 0 para horizontal, 3 (90° CCW) para vertical, como pacman.
+# ------------------------------------------------------------------------------
+# 7. Rotación y resolución
+#    El framebuffer es 1280x1024 (5:4); con rotate=3 se ve 4:5.
+# ------------------------------------------------------------------------------
 batocera-settings-set display.rotate "$ROT"
-
-# El framebuffer siempre es 1280x1024 (5:4); con rotate=3 se ve 4:5.
 batocera-settings-set es.resolution 1280x1024
 batocera-settings-set -f /boot/batocera-boot.conf es.resolution 1280x1024
 

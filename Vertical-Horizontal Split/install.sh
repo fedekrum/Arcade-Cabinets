@@ -1,19 +1,58 @@
 #!/bin/sh
-# Mame y FBNeo: deja los sistemas horizontales con ese nombre y crea los
-# verticales. Ambos tienen la misma estructura, así que se hacen en un proceso.
+#
+#===============================================================================
+# Arcade Cabinets - Separación horizontal / vertical
+#===============================================================================
+# Descripción:
+#   Deja MAME y FBNeo con sus nombres horizontales y crea además los sistemas
+#   mame_vertical y fbneo_vertical. Los cuatro comparten la misma estructura,
+#   así que se configuran en un solo proceso.
+#
+# Uso:
+#   sh install.sh [-h|-v]
+#
+# Parámetros:
+#   -h  modo horizontal (valor por defecto)
+#   -v  modo vertical
+#   El modo solo se registra en el log: se copian las ROMs de ambos sentidos.
+#
+# Requisitos:
+#   - Ejecutar como root dentro de Batocera (debe existir /userdata).
+#   - Necesita python3 para reescribir es_systems_custom.cfg.
+#   - Deben estar en esta carpeta: systems.xml, mame_vertical.cfg,
+#     fbneo_vertical.cfg, roms_horizontal/ y roms_vertical/.
+#
+# Archivos modificados:
+#   /userdata/roms/{mame,fbneo,mame_vertical,fbneo_vertical}
+#   /userdata/system/configs/emulationstation/es_systems_custom.cfg
+#   /userdata/system/configs/emulationstation/es_systems_{mame,fbneo}_vertical.cfg
+#   /userdata/system/batocera.conf (cores por sistema)
+#
+# Notas:
+#   - No se sobrescriben ROMs que ya existan en la máquina (cp -n).
+#   - Todo archivo existente se respalda con sufijo .bak_<fecha>.
+#===============================================================================
+
 set -eu
 
+# ------------------------------------------------------------------------------
+# Utilidades de salida
+# ------------------------------------------------------------------------------
 log()  { printf '[vh-split] %s\n' "$*"; }
 fail() { printf '[vh-split] ERROR: %s\n' "$*" >&2; exit 1; }
 
-# El script principal le pasa -h/-v. Acá se copian ambos juegos, así que el
-# modo solo se registra; no cambia qué archivos se instalan.
+# ------------------------------------------------------------------------------
+# 1. Modo de instalación
+# ------------------------------------------------------------------------------
 case "${1:-}" in
   -v)     MODO=vertical ;;
   -h|"")  MODO=horizontal ;;
   *) fail "uso: $0 [-h|-v]" ;;
 esac
 
+# ------------------------------------------------------------------------------
+# 2. Validación del entorno y de los archivos propios del módulo
+# ------------------------------------------------------------------------------
 [ "$(id -u)" -eq 0 ] || fail "hay que ejecutarlo como root"
 [ -d /userdata ] || fail "esto no parece Batocera"
 command -v python3 >/dev/null 2>&1 || fail "falta python3 en el sistema"
@@ -38,7 +77,10 @@ CUSTOM=$ESDIR/es_systems_custom.cfg
 
 log "configurando Mame Horizontal/Vertical y FBNeo Horizontal/Vertical (modo $MODO)"
 
-# Los cambios de sistemas se hacen con ES detenido.
+# ------------------------------------------------------------------------------
+# 3. Preparación
+#    ES se detiene antes de tocar los sistemas; al salir podría reescribirlos.
+# ------------------------------------------------------------------------------
 if [ -x /etc/init.d/S31emulationstation ]; then
   /etc/init.d/S31emulationstation stop >/dev/null 2>&1 || true
 fi
@@ -47,8 +89,10 @@ mkdir -p /userdata/roms/mame /userdata/roms/fbneo
 mkdir -p /userdata/roms/mame_vertical /userdata/roms/fbneo_vertical
 mkdir -p "$ESDIR"
 
-# Los zips vienen en el repo: horizontales para mame/fbneo, verticales para
-# sus versiones rotadas. No sobrescribo ROMs que ya estén en la máquina.
+# ------------------------------------------------------------------------------
+# 4. Copia de ROMs
+#    Horizontales para mame/fbneo, verticales para sus versiones rotadas.
+# ------------------------------------------------------------------------------
 copiar_roms() {
   origen="$1"
   shift
@@ -67,6 +111,9 @@ copiar_roms() {
 copiar_roms "$HERE/roms_horizontal" /userdata/roms/mame /userdata/roms/fbneo
 copiar_roms "$HERE/roms_vertical" /userdata/roms/mame_vertical /userdata/roms/fbneo_vertical
 
+# ------------------------------------------------------------------------------
+# 5. Lista de sistemas de EmulationStation
+# ------------------------------------------------------------------------------
 if [ ! -f "$CUSTOM" ]; then
   # es_systems_custom.cfg reemplaza la lista stock: hay que arrancar de la
   # lista completa, si no ES se queda solo con los sistemas que pongamos acá.
@@ -77,6 +124,7 @@ else
   backup "$CUSTOM"
 fi
 
+# Renombra los sistemas horizontales e inserta los verticales desde systems.xml.
 python3 - "$CUSTOM" "$HERE/systems.xml" <<'PY'
 import re, sys
 
@@ -124,7 +172,9 @@ for s in mame fbneo; do
   cp "$HERE/${s}_vertical.cfg" "$V"
 done
 
-# Core por defecto en los cuatro sistemas.
+# ------------------------------------------------------------------------------
+# 6. Core por defecto en los cuatro sistemas
+# ------------------------------------------------------------------------------
 batocera-settings-set \
   mame.core mame mame.emulator libretro \
   mame_vertical.core mame mame_vertical.emulator libretro \
