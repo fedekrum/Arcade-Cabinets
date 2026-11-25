@@ -29,5 +29,7 @@ de su carpeta:
   verticales, cores y copia de ROMs. Acepta `-h`/`-v`; por ahora el modo no
   cambia qué ROMs se copian.
 - `QEMU VM/`: notas del laboratorio local. No se instala en los arcades.
+- `Apariencia/`: ajustes visuales (shader global, Game and Watch, etc.).
+  Todavía no tiene instalador.
 
 Después de correr el instalador, reiniciá el arcade.
