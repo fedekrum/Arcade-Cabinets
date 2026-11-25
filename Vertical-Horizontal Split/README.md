@@ -34,7 +34,7 @@ Vertical.
   nada ahí: respeta lo que ya haya en el mueble.
 - Acepta `-h`/`-v` porque se los pasa el instalador principal; por ahora el
   modo no cambia qué ROMs se copian.
-- Guarda una copia con fecha de los archivos que modifica, al lado del original.
+- No crea respaldos: los archivos que modifica se sobrescriben directamente.
 
 `es_systems_custom.cfg` **reemplaza** la lista de sistemas de Batocera, no se
 suma a ella: si no existe, el script la genera copiando la lista completa para

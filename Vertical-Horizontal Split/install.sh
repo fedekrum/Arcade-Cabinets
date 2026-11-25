@@ -32,7 +32,8 @@
 #   - Si una carpeta de destino ya tiene algún .zip, un gamelist.xml o una
 #     carpeta images/, no se copia nada del repo en esa carpeta.
 #   - Si no tiene ninguno, se copian las ROMs, el gamelist.xml y las imágenes.
-#   - Todo archivo existente se respalda con sufijo .bak_<fecha>.
+#   - No crea respaldos: los archivos se sobrescriben directamente.
+#   - Si el script se bajó suelto a /tmp, se borra solo al terminar.
 #===============================================================================
 
 set -eu
@@ -42,6 +43,14 @@ set -eu
 # ------------------------------------------------------------------------------
 log()  { printf '[vh-split] %s\n' "$*"; }
 fail() { printf '[vh-split] ERROR: %s\n' "$*" >&2; exit 1; }
+
+# Limpieza final: si el módulo se bajó suelto a /tmp, no deja el script.
+limpieza() {
+  case "$0" in
+    /tmp/*|/var/tmp/*) rm -f -- "$0" ;;
+  esac
+}
+trap 'limpieza' EXIT
 
 # ------------------------------------------------------------------------------
 # 1. Modo de instalación
@@ -60,19 +69,11 @@ esac
 command -v python3 >/dev/null 2>&1 || fail "falta python3 en el sistema"
 
 HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-TS=$(date +%Y%m%d_%H%M%S)
 [ -f "$HERE/systems.xml" ] || fail "no encontré $HERE/systems.xml"
 
 for s in mame fbneo; do
   [ -f "$HERE/${s}_vertical.cfg" ] || fail "no encontré $HERE/${s}_vertical.cfg"
 done
-
-backup() {
-  if [ -e "$1" ]; then
-    cp -a "$1" "$1.bak_$TS"
-    log "backup: $1.bak_$TS"
-  fi
-}
 
 ESDIR=/userdata/system/configs/emulationstation
 CUSTOM=$ESDIR/es_systems_custom.cfg
@@ -148,8 +149,6 @@ if [ ! -f "$CUSTOM" ]; then
   [ -f /usr/share/emulationstation/es_systems.cfg ] || fail "no encontré la lista stock de sistemas"
   cp /usr/share/emulationstation/es_systems.cfg "$CUSTOM"
   log "es_systems_custom.cfg creado desde la lista stock"
-else
-  backup "$CUSTOM"
 fi
 
 # Renombra los sistemas horizontales e inserta los verticales desde systems.xml.
@@ -196,7 +195,6 @@ PY
 
 for s in mame fbneo; do
   V=$ESDIR/es_systems_${s}_vertical.cfg
-  backup "$V"
   cp "$HERE/${s}_vertical.cfg" "$V"
 done
 

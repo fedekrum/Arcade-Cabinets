@@ -14,9 +14,15 @@ sh /tmp/install-arcade.sh -h   # horizontal (valor por defecto)
 sh /tmp/install-arcade.sh -v   # vertical
 ```
 
-Si el directorio destino ya existe, lo guarda como `.bak_<fecha>`. Se puede
-cambiar con la variable `ARCADE_INSTALL_DIR` (por defecto
-`/userdata/arcade-cabinets`).
+Se puede cambiar el directorio de trabajo con la variable `ARCADE_INSTALL_DIR`
+(por defecto `/userdata/arcade-cabinets`).
+
+Al terminar (incluso si falla), el instalador **borra todo lo que bajó**: el
+repo copiado, el directorio temporal y el propio `/tmp/install-arcade.sh`. No
+queda nada del proceso salvo lo que instalaron los módulos. No crea respaldos.
+
+Si instalás un módulo suelto con `curl`/`wget` a `/tmp`, su `install.sh` también
+se borra solo al finalizar. Si lo ejecutás desde el repo, se conserva.
 
 ## Módulos
 
@@ -24,7 +30,7 @@ Cada carpeta tiene su propio `install.sh` y solo usa archivos que están dentro
 de su carpeta:
 
 - `splash/install.sh`: imágenes de arranque y de la barra de carga, rotación,
-  grillas, música de fondo y backups. Acepta `-h`/`-v`.
+  grillas y música de fondo. Acepta `-h`/`-v`.
 - `Vertical-Horizontal Split/install.sh`: sistemas Mame/FBNeo horizontales y
   verticales, cores y copia de ROMs. Acepta `-h`/`-v`; por ahora el modo no
   cambia qué ROMs se copian.

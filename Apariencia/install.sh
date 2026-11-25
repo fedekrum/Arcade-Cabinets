@@ -26,9 +26,10 @@
 #   - Necesita batocera-settings-set.
 #
 # Notas:
-#   - batocera.conf se respalda con sufijo .bak_<fecha>.
+#   - No crea respaldos: los archivos se sobrescriben directamente.
 #   - Si en el futuro se usan shaders propios, recién ahí tiene sentido
 #     guardar los archivos .glslp/.slangp en esta carpeta.
+#   - Si el script se bajó suelto a /tmp, se borra solo al terminar.
 #===============================================================================
 
 set -eu
@@ -38,6 +39,14 @@ set -eu
 # ------------------------------------------------------------------------------
 log()  { printf '[apariencia] %s\n' "$*"; }
 fail() { printf '[apariencia] ERROR: %s\n' "$*" >&2; exit 1; }
+
+# Limpieza final: si el módulo se bajó suelto a /tmp, no deja el script.
+limpieza() {
+  case "$0" in
+    /tmp/*|/var/tmp/*) rm -f -- "$0" ;;
+  esac
+}
+trap 'limpieza' EXIT
 
 # ------------------------------------------------------------------------------
 # 1. Modo (se ignora; solo se valida)
@@ -56,14 +65,10 @@ command -v batocera-settings-set >/dev/null 2>&1 || fail "falta batocera-setting
 
 BATOCERA_CONF=/userdata/system/batocera.conf
 [ -f "$BATOCERA_CONF" ] || fail "no encontré $BATOCERA_CONF"
-TS=$(date +%Y%m%d_%H%M%S)
 
 # ------------------------------------------------------------------------------
-# 3. Respaldo y aplicación de los shaders
+# 3. Aplicación de los shaders
 # ------------------------------------------------------------------------------
-cp -a "$BATOCERA_CONF" "$BATOCERA_CONF.bak_$TS"
-log "backup: $BATOCERA_CONF.bak_$TS"
-
 batocera-settings-set \
   global.shaderset curvature \
   mame.shaderset curvature \
@@ -82,9 +87,6 @@ if [ -f "$ES_SETTINGS" ]; then
   if [ -x /etc/init.d/S31emulationstation ]; then
     /etc/init.d/S31emulationstation stop >/dev/null 2>&1 || true
   fi
-  cp -a "$ES_SETTINGS" "$ES_SETTINGS.bak_$TS"
-  log "backup: $ES_SETTINGS.bak_$TS"
-
   python3 - "$ES_SETTINGS" <<'PY'
 import re, sys
 

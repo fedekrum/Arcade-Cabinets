@@ -32,12 +32,12 @@
 #   /userdata/system/configs/emulationstation/es_systems_custom.cfg
 #
 # Notas:
-#   - El gamelist.xml reemplaza al existente (se guarda un .bak_<fecha>) y
-#     incluye las cuatro herramientas: Retrotrivia, pygun, Referencia y
-#     Verticalizer.
+#   - El gamelist.xml se reemplaza e incluye las cuatro herramientas:
+#     Retrotrivia, pygun, Referencia y Verticalizer.
 #   - Verticalizer mueve ROMs, XML e imágenes entre mame/fbneo y sus carpetas
 #     verticales. Este instalador solo lo copia: NO lo ejecuta.
-#   - No se copian logs, backups ni archivos __pycache__ de pacman.
+#   - No copia respaldos: los archivos se sobrescriben directamente.
+#   - Si el script se bajó suelto a /tmp, se borra solo al terminar.
 #===============================================================================
 
 set -eu
@@ -47,6 +47,14 @@ set -eu
 # ------------------------------------------------------------------------------
 log()  { printf '[pygame] %s\n' "$*"; }
 fail() { printf '[pygame] ERROR: %s\n' "$*" >&2; exit 1; }
+
+# Limpieza final: si el módulo se bajó suelto a /tmp, no deja el script.
+limpieza() {
+  case "$0" in
+    /tmp/*|/var/tmp/*) rm -f -- "$0" ;;
+  esac
+}
+trap 'limpieza' EXIT
 
 # ------------------------------------------------------------------------------
 # 1. Modo (se ignora; solo se valida)
@@ -64,20 +72,12 @@ esac
 command -v python3 >/dev/null 2>&1 || fail "falta python3 en el sistema"
 
 HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-TS=$(date +%Y%m%d_%H%M%S)
 
 [ -f "$HERE/gamelist.xml" ] || fail "no encontré $HERE/gamelist.xml"
 [ -f "$HERE/pygame-system.xml" ] || fail "no encontré $HERE/pygame-system.xml"
 for sub in Verticalizer Referencia images; do
   [ -d "$HERE/$sub" ] || fail "no encontré $HERE/$sub"
 done
-
-backup() {
-  if [ -e "$1" ]; then
-    cp -a "$1" "$1.bak_$TS"
-    log "backup: $1.bak_$TS"
-  fi
-}
 
 DEST=/userdata/roms/pygame
 ESDIR=/userdata/system/configs/emulationstation
@@ -105,7 +105,6 @@ done
 chmod 755 "$DEST/Verticalizer/Verticalizer.pygame" "$DEST/Referencia/Referencia.pygame"
 log "copiadas: Verticalizer, Referencia, images/Verticalizer.png"
 
-backup "$DEST/gamelist.xml"
 cp "$HERE/gamelist.xml" "$DEST/gamelist.xml"
 chmod 644 "$DEST/gamelist.xml"
 
@@ -119,8 +118,6 @@ if [ ! -f "$CUSTOM" ]; then
   [ -f /usr/share/emulationstation/es_systems.cfg ] || fail "no encontré la lista stock de sistemas"
   cp /usr/share/emulationstation/es_systems.cfg "$CUSTOM"
   log "es_systems_custom.cfg creado desde la lista stock"
-else
-  backup "$CUSTOM"
 fi
 
 python3 - "$CUSTOM" "$HERE/pygame-system.xml" <<'PY'

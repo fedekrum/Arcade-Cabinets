@@ -30,9 +30,10 @@
 #   desde /boot/boot-custom.sh en cada reinicio)
 #
 # Notas:
-#   - Todo archivo existente se respalda con sufijo .bak_<fecha>.
+#   - No crea respaldos: los archivos se sobrescriben directamente.
 #   - Batocera restaura /etc y /usr al reiniciar: la persistencia depende del
 #     hook /boot/boot-custom.sh que se instala más abajo.
+#   - Si el script se bajó suelto a /tmp, se borra solo al terminar.
 #===============================================================================
 
 set -eu
@@ -42,6 +43,13 @@ set -eu
 # ------------------------------------------------------------------------------
 log()  { printf '[splash] %s\n' "$*"; }
 fail() { printf '[splash] ERROR: %s\n' "$*" >&2; exit 1; }
+
+# Limpieza final: si el módulo se bajó suelto a /tmp, no deja el script.
+limpieza() {
+  case "$0" in
+    /tmp/*|/var/tmp/*) rm -f -- "$0" ;;
+  esac
+}
 
 # ------------------------------------------------------------------------------
 # 1. Modo de instalación
@@ -60,14 +68,6 @@ esac
 [ -f /etc/init.d/S00bootcustom ] || fail "no encontré /etc/init.d/S00bootcustom"
 
 HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-TS=$(date +%Y%m%d_%H%M%S)
-
-backup() {
-  if [ -e "$1" ]; then
-    cp -a "$1" "$1.bak_$TS"
-    log "backup: $1.bak_$TS"
-  fi
-}
 
 case "$MODE" in
   # Grillas: valores de sf2 para horizontal, de pacman para vertical.
@@ -82,20 +82,18 @@ log "instalando splash $MODE"
 
 # /boot se monta solo lectura en Batocera; se restaura al salir.
 mount -o remount,rw /boot 2>/dev/null || fail "no pude montar /boot en lectura/escritura"
-trap 'mount -o remount,ro /boot >/dev/null 2>&1 || true' EXIT
+trap 'mount -o remount,ro /boot >/dev/null 2>&1 || true; limpieza' EXIT
 
 # ------------------------------------------------------------------------------
 # 3. Hook de arranque persistente
 #    Lo ejecuta S00bootcustom en cada inicio y reaplica los cambios que Batocera
 #    restaura en /etc y /usr.
 # ------------------------------------------------------------------------------
-backup /boot/boot-custom.sh
 cp "$HERE/boot-custom.sh" /boot/boot-custom.sh
 chmod 755 /boot/boot-custom.sh
 
 # La copia en /userdata/system no se usa; en sf2 no existe.
 if [ -e /userdata/system/boot-custom.sh ]; then
-  backup /userdata/system/boot-custom.sh
   rm -f /userdata/system/boot-custom.sh
 fi
 
@@ -104,7 +102,6 @@ fi
 #    Se normaliza la línea de S28splash para que estire sin conservar
 #    proporción, tanto en la línea stock como en la variante de pacman.
 # ------------------------------------------------------------------------------
-backup /etc/init.d/S28splash
 python3 - <<'PY'
 import re
 p = "/etc/init.d/S28splash"
@@ -125,12 +122,10 @@ PY
 # 5. Imágenes de splash
 # ------------------------------------------------------------------------------
 mkdir -p /userdata/splash
-backup /userdata/splash/krum.png
 cp "$IMG" /userdata/splash/krum.png
 chmod 644 /userdata/splash/krum.png
 
 # Imagen de la barra de carga de EmulationStation (se reaplica en cada arranque).
-backup /boot/splash-es.png
 cp "$ES_IMG" /boot/splash-es.png
 chmod 644 /boot/splash-es.png
 
@@ -186,7 +181,6 @@ sed -i '/^splash\.video\.rotation=/d' /userdata/system/batocera.conf
 THEME_SET=$(sed -n 's/.*<string name="ThemeSet" value="\([^"]*\)".*/\1/p' "$ES_SETTINGS" 2>/dev/null | head -1)
 SPLASH_XML="/usr/share/emulationstation/themes/${THEME_SET:-es-theme-carbon}/gamesplash.xml"
 if [ -f "$SPLASH_XML" ]; then
-  backup "$SPLASH_XML"
   python3 - "$SPLASH_XML" <<'PY'
 import re, sys
 p = sys.argv[1]

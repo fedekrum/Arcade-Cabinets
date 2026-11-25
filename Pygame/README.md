@@ -31,7 +31,7 @@ Acepta `-h`/`-v` pero el modo no cambia nada.
 - Copia `Verticalizer/`, `Referencia/` y `images/Verticalizer.png` a
   `/userdata/roms/pygame/`.
 - Reemplaza `gamelist.xml` por el de pacman, con las cuatro herramientas
-  (Retrotrivia, pygun, Referencia y Verticalizer). Guarda un `.bak_<fecha>`.
+  (Retrotrivia, pygun, Referencia y Verticalizer), sin respaldos.
 - Ajusta el sistema `pygame` de `es_systems_custom.cfg` para que use
   `<command>%ROM%</command>` en vez del `batocera-launch` stock. Si el sistema
   no existe, lo agrega desde `pygame-system.xml`.
@@ -41,4 +41,4 @@ Acepta `-h`/`-v` pero el modo no cambia nada.
 
 `Verticalizer` **mueve** ROMs, imágenes y metadata entre sistemas. El instalador
 solo lo copia: no lo ejecuta. No se copiaron los logs (uno pesaba 48 MB), los
-backups ni los `__pycache__` que había en pacman.
+archivos `.backup` ni los `__pycache__` que había en pacman.

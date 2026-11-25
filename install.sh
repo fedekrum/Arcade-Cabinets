@@ -22,9 +22,11 @@
 #   ARCADE_INSTALL_DIR  destino del repo (por defecto /userdata/arcade-cabinets)
 #
 # Efectos:
-#   - Si el destino existe, lo renombra a <destino>.bak_<fecha>.
 #   - Ejecuta Apariencia/install.sh, splash/install.sh,
 #     Vertical-Horizontal Split/install.sh y Pygame/install.sh.
+#   - Al terminar borra el repo descargado, el directorio temporal y el propio
+#     script si se ejecutó desde /tmp. No queda nada del proceso salvo lo que
+#     instalaron los módulos.
 #===============================================================================
 
 set -eu
@@ -34,6 +36,28 @@ set -eu
 # ------------------------------------------------------------------------------
 log()  { printf '[arcade] %s\n' "$*"; }
 fail() { printf '[arcade] ERROR: %s\n' "$*" >&2; exit 1; }
+
+# ------------------------------------------------------------------------------
+# Limpieza final
+#   Se ejecuta al salir, incluso si falla: borra el repo descargado, el
+#   directorio temporal y el propio script si se bajó a /tmp.
+# ------------------------------------------------------------------------------
+limpieza() {
+  if [ -n "${TMP:-}" ] && [ -d "$TMP" ]; then
+    rm -rf "$TMP"
+  fi
+  if [ -n "${DEST:-}" ]; then
+    if [ -e "$DEST" ]; then
+      rm -rf "$DEST"
+      log "limpieza: borrado $DEST"
+    fi
+  fi
+  # Si el instalador se bajó suelto a /tmp, no deja ni el script.
+  case "$0" in
+    /tmp/*|/var/tmp/*) rm -f -- "$0" ;;
+  esac
+}
+trap 'limpieza' EXIT
 
 # ------------------------------------------------------------------------------
 # 1. Modo de instalación
@@ -52,7 +76,6 @@ esac
 
 REPO_URL="https://codeload.github.com/fedekrum/Arcade-Cabinets/tar.gz/refs/heads/master"
 DEST=${ARCADE_INSTALL_DIR:-/userdata/arcade-cabinets}
-TS=$(date +%Y%m%d_%H%M%S)
 TMP="/tmp/arcade-install.$$"
 
 command -v tar >/dev/null 2>&1 || fail "falta tar"
@@ -60,16 +83,14 @@ if ! command -v curl >/dev/null 2>&1 && ! command -v wget >/dev/null 2>&1; then
   fail "falta curl o wget"
 fi
 
-# Limpieza garantizada del directorio temporal, incluso si falla el script.
 mkdir -p "$TMP"
-trap 'rm -rf "$TMP"' EXIT
 
 # ------------------------------------------------------------------------------
-# 3. Respaldo de una instalación anterior
+# 3. Descarte de una instalación anterior
 # ------------------------------------------------------------------------------
 if [ -e "$DEST" ]; then
-  mv "$DEST" "$DEST.bak_$TS"
-  log "directorio anterior guardado como $DEST.bak_$TS"
+  rm -rf "$DEST"
+  log "directorio anterior descartado: $DEST"
 fi
 
 # ------------------------------------------------------------------------------
