@@ -23,7 +23,8 @@
 #
 # Efectos:
 #   - Si el destino existe, lo renombra a <destino>.bak_<fecha>.
-#   - Ejecuta splash/install.sh y Vertical-Horizontal Split/install.sh.
+#   - Ejecuta Apariencia/install.sh, splash/install.sh y
+#     Vertical-Horizontal Split/install.sh.
 #===============================================================================
 
 set -eu
